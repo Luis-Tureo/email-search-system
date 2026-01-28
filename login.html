@@ -1,53 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Acceso</title>
 </head>
+
 <body>
 
-<h2>Acceso al sistema</h2>
+  <h2>Acceso al sistema</h2>
 
-<input id="password" type="password" placeholder="Contraseña" />
-<br><br>
+  <input id="password" type="password" placeholder="Contraseña" />
+  <br><br>
 
-<button onclick="login('reader')">Entrar como lector</button>
-<button onclick="login('admin')">Entrar como administrador</button>
+  <button onclick="login('reader')">Entrar como lector</button>
+  <button onclick="login('admin')">Entrar como administrador</button>
 
-<p id="msg" style="color:red;"></p>
+  <p id="msg" style="color:red;"></p>
 
-<script>
-async function login(mode) {
-  const password = document.getElementById('password').value;
-  const msg = document.getElementById('msg');
-  msg.textContent = '';
+  <script>
+    async function login(mode) {
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('msg');
+      msg.textContent = '';
 
-  try {
-    const res = await fetch('/.netlify/functions/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, mode })
-    });
+      try {
+        const res = await fetch('/.netlify/functions/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password, mode })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (!res.ok) {
-      msg.textContent = data.error || 'Error de acceso';
-      return;
+        if (!res.ok) {
+          msg.textContent = data.error || 'Error de acceso';
+          return;
+        }
+
+        // Mostrar resultado
+        msg.style.color = 'green';
+        msg.textContent = 'Login correcto. Rol: ' + data.role;
+
+        // Guardar token
+        localStorage.setItem('jwt', data.token);
+
+      } catch (e) {
+        msg.textContent = 'Error de conexión';
+      }
     }
-
-    // Mostrar resultado
-    msg.style.color = 'green';
-    msg.textContent = 'Login correcto. Rol: ' + data.role;
-
-    // Guardar token
-    localStorage.setItem('jwt', data.token);
-
-  } catch (e) {
-    msg.textContent = 'Error de conexión';
-  }
-}
-</script>
+  </script>
 
 </body>
+
 </html>

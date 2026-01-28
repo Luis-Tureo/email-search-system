@@ -1,7 +1,8 @@
 // =====================================================
 // CONFIGURACIÓN GENERAL
 // =====================================================
-const SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co";
+const SUPABASE_URL = window.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
 const jwtToken = localStorage.getItem("jwt");
 
 // =====================================================
@@ -12,11 +13,18 @@ if (!jwtToken) {
 }
 
 // =====================================================
-// SUPABASE CLIENT (NO USAR nombre 'supabase')
+// SUPABASE CLIENT (API KEY + JWT)
 // =====================================================
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  jwtToken
+  SUPABASE_ANON_KEY,
+  {
+    global: {
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+      },
+    },
+  },
 );
 
 // =====================================================
@@ -29,7 +37,8 @@ function parseJwt(token) {
 }
 
 const sessionData = parseJwt(jwtToken);
-const isAdmin = sessionData.is_admin === true || sessionData.is_admin === "true";
+const isAdmin =
+  sessionData.is_admin === true || sessionData.is_admin === "true";
 
 // =====================================================
 // ELEMENTOS DOM
@@ -100,7 +109,6 @@ async function loadCatalogs() {
 
 function fillSelect(select, data) {
   select.innerHTML = `<option value="">${select.options[0].text}</option>`;
-
   if (!data) return;
 
   data.forEach((item) => {
@@ -121,7 +129,8 @@ async function searchInstitutions() {
 
   let query = supabaseClient
     .from("institutions")
-    .select(`
+    .select(
+      `
       id,
       institution_name,
       email,
@@ -129,7 +138,8 @@ async function searchInstitutions() {
       zone:zones(name),
       region:regions(name),
       comuna:comunas(name)
-    `)
+    `,
+    )
     .order("institution_name");
 
   if (searchIdInput.value.trim()) {
@@ -139,7 +149,7 @@ async function searchInstitutions() {
   if (searchTextInput.value.trim()) {
     query = query.ilike(
       "institution_name",
-      `%${searchTextInput.value.trim()}%`
+      `%${searchTextInput.value.trim()}%`,
     );
   }
 
@@ -151,6 +161,7 @@ async function searchInstitutions() {
 
   if (error) {
     alert("Error al buscar instituciones");
+    console.error(error);
     return;
   }
 
@@ -219,9 +230,7 @@ function copyEmail(email) {
 async function createInstitution(payload) {
   if (!isAdmin) return;
 
-  const { error } = await supabaseClient
-    .from("institutions")
-    .insert(payload);
+  const { error } = await supabaseClient.from("institutions").insert(payload);
 
   if (error) {
     alert("Error al crear institución");
@@ -270,3 +279,4 @@ async function deleteInstitution(id) {
     searchInstitutions();
   }
 }
+// =====================================================
