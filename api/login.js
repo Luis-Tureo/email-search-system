@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export async function handler(event) {
+export default async function handler(req, res) {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
