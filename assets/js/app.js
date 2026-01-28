@@ -1,255 +1,247 @@
-document.addEventListener("DOMContentLoaded", function () {
-  const tooltipTriggerList = [].slice.call(
-    document.querySelectorAll('[data-bs-toggle="tooltip"]'),
-  );
-
-  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-    new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-
-  // Carga inicial segura
-  loadFilters();
-  performSearch();
-});
+// =====================================================
+// CONFIGURACIÓN GENERAL
+// =====================================================
+const SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co"; // TU URL
+const jwtToken = localStorage.getItem("jwt");
 
 // =====================================================
-// ELEMENTOS PRINCIPALES DE LA INTERFAZ
+// VALIDACIÓN DE SESIÓN
 // =====================================================
-
-// Campos de búsqueda
-const searchIdInput = document.getElementById("buscar-id");
-const searchInput = document.getElementById("buscar");
-
-// Filtros
-const zoneFilter = document.getElementById("zona");
-const regionFilter = document.getElementById("region");
-const comunaFilter = document.getElementById("comuna");
-
-// Tabla y contador
-const tableBody = document.getElementById("tabla-body");
-const counterLabel = document.getElementById("counter");
-
-// =====================================================
-// RUTA BASE CORRECTA HACIA search.php
-// =====================================================
-
-// app/assets/js/app.js  →  app/search.php
-const API_URL = "../../search.php";
-
-// =====================================================
-// EVENTOS DE BÚSQUEDA
-// =====================================================
-
-if (searchIdInput) searchIdInput.addEventListener("keyup", performSearch);
-if (searchInput) searchInput.addEventListener("keyup", performSearch);
-
-if (zoneFilter) zoneFilter.addEventListener("change", performSearch);
-if (regionFilter) regionFilter.addEventListener("change", performSearch);
-if (comunaFilter) comunaFilter.addEventListener("change", performSearch);
-
-// =====================================================
-// CARGA DINÁMICA DE FILTROS DESDE BASE DE DATOS
-// =====================================================
-
-function loadFilters() {
-  // ZONAS
-  fetch(`${API_URL}?action=zones`)
-    .then((res) => res.json())
-    .then((data) => fillSelect(zoneFilter, data));
-
-  // REGIONES
-  fetch(`${API_URL}?action=regions`)
-    .then((res) => res.json())
-    .then((data) => fillSelect(regionFilter, data));
-
-  // COMUNAS
-  fetch(`${API_URL}?action=comunas`)
-    .then((res) => res.json())
-    .then((data) => fillSelect(comunaFilter, data));
+if (!jwtToken) {
+  window.location.href = "/acceso.html";
 }
 
 // =====================================================
-// LLENAR SELECT NORMAL
+// SUPABASE CLIENT (JWT)
 // =====================================================
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  jwtToken
+);
+
+// =====================================================
+// DECODIFICAR JWT (rol)
+// =====================================================
+function parseJwt(token) {
+  const base64Url = token.split(".")[1];
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  return JSON.parse(atob(base64));
+}
+
+const sessionData = parseJwt(jwtToken);
+const isAdmin = sessionData.is_admin === true;
+
+// =====================================================
+// ELEMENTOS DOM
+// =====================================================
+const searchIdInput = document.getElementById("search-id");
+const searchTextInput = document.getElementById("search-text");
+
+const zoneFilter = document.getElementById("zone-filter");
+const regionFilter = document.getElementById("region-filter");
+const comunaFilter = document.getElementById("comuna-filter");
+
+const resultsBody = document.getElementById("results-body");
+const resultsCounter = document.getElementById("results-counter");
+
+const logoutLink = document.getElementById("logout-link");
+
+// =====================================================
+// LOGOUT
+// =====================================================
+logoutLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  localStorage.removeItem("jwt");
+  window.location.href = "/acceso.html";
+});
+
+// =====================================================
+// INICIALIZACIÓN
+// =====================================================
+document.addEventListener("DOMContentLoaded", () => {
+  loadCatalogs();
+  searchInstitutions();
+});
+
+// =====================================================
+// EVENTOS
+// =====================================================
+searchIdInput.addEventListener("keyup", searchInstitutions);
+searchTextInput.addEventListener("keyup", searchInstitutions);
+zoneFilter.addEventListener("change", searchInstitutions);
+regionFilter.addEventListener("change", searchInstitutions);
+comunaFilter.addEventListener("change", searchInstitutions);
+
+// =====================================================
+// CARGAR CATÁLOGOS (ZONA / REGIÓN / COMUNA)
+// =====================================================
+async function loadCatalogs() {
+  const zones = await supabase.from("zones").select("id, name").order("name");
+  fillSelect(zoneFilter, zones.data);
+
+  const regions = await supabase.from("regions").select("id, name").order("name");
+  fillSelect(regionFilter, regions.data);
+
+  const comunas = await supabase.from("comunas").select("id, name").order("name");
+  fillSelect(comunaFilter, comunas.data);
+}
 
 function fillSelect(select, data) {
-  if (!select) return;
-
-  // Limpiar opciones previas (excepto la primera)
-  select
-    .querySelectorAll("option:not(:first-child)")
-    .forEach((o) => o.remove());
-
-  data.forEach((value) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    select.appendChild(option);
+  select.innerHTML = `<option value="">${select.options[0].text}</option>`;
+  data.forEach((item) => {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = item.name;
+    select.appendChild(opt);
   });
-
   select.disabled = false;
 }
 
 // =====================================================
-// FUNCIÓN PRINCIPAL DE BÚSQUEDA
+// BUSCAR INSTITUCIONES (READ)
 // =====================================================
+async function searchInstitutions() {
+  resultsBody.innerHTML = "";
 
-function performSearch() {
-  const params = new URLSearchParams();
+  let query = supabase
+    .from("institutions")
+    .select(`
+      id,
+      institution_name,
+      email,
+      observation,
+      zone:zones(name),
+      region:regions(name),
+      comuna:comunas(name)
+    `)
+    .order("institution_name");
 
-  // 🔹 Búsqueda por ID
-  if (searchIdInput && searchIdInput.value.trim() !== "") {
-    params.append("id", searchIdInput.value.trim());
+  if (searchIdInput.value.trim()) {
+    query = query.eq("id", searchIdInput.value.trim());
   }
 
-  // 🔹 Búsqueda por texto
-  if (searchInput && searchInput.value.trim() !== "") {
-    params.append("q", searchInput.value.trim());
+  if (searchTextInput.value.trim()) {
+    query = query.ilike("institution_name", `%${searchTextInput.value.trim()}%`);
   }
 
-  // Filtros
-  if (zoneFilter && zoneFilter.value !== "") {
-    params.append("zone", zoneFilter.value);
-  }
+  if (zoneFilter.value) query = query.eq("zone_id", zoneFilter.value);
+  if (regionFilter.value) query = query.eq("region_id", regionFilter.value);
+  if (comunaFilter.value) query = query.eq("comuna_id", comunaFilter.value);
 
-  if (regionFilter && regionFilter.value !== "") {
-    params.append("region", regionFilter.value);
-  }
+  const { data, error } = await query;
 
-  if (comunaFilter && comunaFilter.value !== "") {
-    params.append("comuna", comunaFilter.value);
-  }
-
-  fetch(`${API_URL}?${params.toString()}`)
-    .then((response) => response.json())
-    .then((data) => {
-      renderResults(data);
-    })
-    .catch((error) => {
-      console.error("Error búsqueda:", error);
-      showToast("Error al realizar la búsqueda", "error");
-    });
-}
-
-// =====================================================
-// MOSTRAR RESULTADOS EN LA TABLA
-// =====================================================
-
-function renderResults(records) {
-  tableBody.innerHTML = "";
-
-  if (!records || records.length === 0) {
-    counterLabel.innerText = "Registros encontrados: 0";
+  if (error) {
+    alert("Error al buscar instituciones");
     return;
   }
 
-  // Ordenar por ID ascendente
-  records.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+  if (!data || data.length === 0) {
+    resultsCounter.textContent = "Registros encontrados: 0";
+    return;
+  }
 
-  records.forEach((record) => {
-    const row = document.createElement("tr");
+  data.forEach(renderRow);
+  resultsCounter.textContent = `Registros encontrados: ${data.length}`;
+}
 
-    row.innerHTML = `
-      <td class="col-center">${record.id}</td>
-      <td>${record.institution_name}</td>
-      <td class="correo">${record.email}</td>
-      <td>${record.region || ""}</td>
-      <td>${record.comuna || ""}</td>
-      <td>${record.observation || ""}</td>
-      <td class="col-center">
-        ${
-          record.file_path
-            ? `<button class="btn btn-sm btn-secondary"
-                     onclick="openFile('${record.file_path}')"
-                     data-bs-toggle="tooltip"
-                     title="Abrir documento">
-                Abrir
-               </button>`
-            : "—"
-        }
-      </td>
-      <td class="col-center">
-        <button class="btn btn-sm btn-copiar"
+// =====================================================
+// RENDER FILA
+// =====================================================
+function renderRow(record) {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td>${record.id}</td>
+    <td>${record.institution_name}</td>
+    <td>${record.email.replaceAll(";", "<br>")}</td>
+    <td>${record.region?.name || ""}</td>
+    <td>${record.comuna?.name || ""}</td>
+    <td>${record.observation || ""}</td>
+    <td>—</td>
+    <td>
+      ${isAdmin ? `
+        <button class="btn btn-sm btn-warning" onclick="editInstitution(${record.id})">
+          Editar
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteInstitution(${record.id})">
+          Eliminar
+        </button>
+      ` : `
+        <button class="btn btn-sm btn-outline-secondary"
                 onclick="copyEmail('${record.email}')">
           Copiar
         </button>
-      </td>
-    `;
+      `}
+    </td>
+  `;
 
-    tableBody.appendChild(row);
-  });
-
-  counterLabel.innerText = "Registros encontrados: " + records.length;
+  resultsBody.appendChild(tr);
 }
 
 // =====================================================
 // COPIAR CORREO
 // =====================================================
-
 function copyEmail(email) {
-  if (!email) {
-    showToast("Este registro no tiene correo válido", "warning");
-    return;
-  }
-
   navigator.clipboard
     .writeText(email)
-    .then(() => showToast("Correo copiado con éxito", "success"))
-    .catch(() => showToast("No se pudo copiar el correo", "error"));
+    .then(() => alert("Correo copiado"))
+    .catch(() => alert("No se pudo copiar"));
 }
 
 // =====================================================
-// ABRIR ARCHIVO (CORREGIDO → usa ?ruta= como espera PHP)
+// CREATE (ADMIN)
 // =====================================================
+async function createInstitution(payload) {
+  if (!isAdmin) return;
 
-function openFile(path) {
-  if (!path || path === "") {
-    showToast("Este registro no tiene documento asociado", "warning");
-    return;
+  const { error } = await supabase
+    .from("institutions")
+    .insert(payload);
+
+  if (error) {
+    alert("Error al crear institución");
+  } else {
+    searchInstitutions();
   }
-
-  window.open("/open_file.php?ruta=" + encodeURIComponent(path), "_blank");
 }
 
 // =====================================================
-// MENSAJE TOAST INSTITUCIONAL
+// UPDATE (ADMIN)
 // =====================================================
+async function editInstitution(id) {
+  if (!isAdmin) return;
 
-function showToast(message, type) {
-  const oldToast = document.querySelector(".toast-copiar");
-  if (oldToast) oldToast.remove();
+  const newName = prompt("Nuevo nombre de la institución:");
+  if (!newName) return;
 
-  const toast = document.createElement("div");
-  toast.className = "toast-copiar";
+  const { error } = await supabase
+    .from("institutions")
+    .update({ institution_name: newName })
+    .eq("id", id);
 
-  if (type === "success") toast.classList.add("toast-success");
-  else if (type === "warning") toast.classList.add("toast-warning");
-  else if (type === "error") toast.classList.add("toast-error");
-  else toast.classList.add("toast-info");
-
-  toast.innerText = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.classList.add("show"), 50);
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 1400);
+  if (error) {
+    alert("Error al actualizar");
+  } else {
+    searchInstitutions();
+  }
 }
 
 // =====================================================
-// CERRAR SISTEMA COMPLETO
-// Ejecuta stop.vbs y cierra la pestaña directamente
+// DELETE (ADMIN)
 // =====================================================
+async function deleteInstitution(id) {
+  if (!isAdmin) return;
 
-function closeSystem() {
-  // Enviar señal de apagado SIN esperar respuesta
-  navigator.sendBeacon("close_system.php");
+  if (!confirm("¿Eliminar esta institución?")) return;
 
-  // Cerrar pestaña inmediatamente
-  setTimeout(() => {
-    window.open("", "_self");
-    window.close();
-  }, 150);
+  const { error } = await supabase
+    .from("institutions")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Error al eliminar");
+  } else {
+    searchInstitutions();
+  }
 }
