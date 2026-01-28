@@ -1,44 +1,16 @@
 // =====================================================
-// CONFIGURACIÓN GENERAL
+// CONFIGURACIÓN GENERAL (MODO PRUEBA)
 // =====================================================
 const SUPABASE_URL = window.SUPABASE_URL;
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
-const jwtToken = localStorage.getItem("jwt");
 
 // =====================================================
-// VALIDACIÓN DE SESIÓN
-// =====================================================
-if (!jwtToken) {
-  window.location.href = "/acceso.html";
-}
-
-// =====================================================
-// SUPABASE CLIENT (API KEY + JWT)
+// SUPABASE CLIENT (SIN JWT)
 // =====================================================
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  {
-    global: {
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-      },
-    },
-  },
+  SUPABASE_ANON_KEY
 );
-
-// =====================================================
-// DECODIFICAR JWT (ROL)
-// =====================================================
-function parseJwt(token) {
-  const base64Url = token.split(".")[1];
-  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  return JSON.parse(atob(base64));
-}
-
-const sessionData = parseJwt(jwtToken);
-const isAdmin =
-  sessionData.is_admin === true || sessionData.is_admin === "true";
 
 // =====================================================
 // ELEMENTOS DOM
@@ -53,19 +25,8 @@ const comunaFilter = document.getElementById("comuna-filter");
 const resultsBody = document.getElementById("results-body");
 const resultsCounter = document.getElementById("results-counter");
 
-const logoutLink = document.getElementById("logout-link");
-
 // =====================================================
-// LOGOUT
-// =====================================================
-logoutLink.addEventListener("click", (e) => {
-  e.preventDefault();
-  localStorage.removeItem("jwt");
-  window.location.href = "/acceso.html";
-});
-
-// =====================================================
-// INICIALIZACIÓN
+// INIT
 // =====================================================
 document.addEventListener("DOMContentLoaded", () => {
   loadCatalogs();
@@ -129,17 +90,14 @@ async function searchInstitutions() {
 
   let query = supabaseClient
     .from("institutions")
-    .select(
-      `
+    .select(`
       id,
       institution_name,
       email,
       observation,
-      zone:zones(name),
       region:regions(name),
       comuna:comunas(name)
-    `,
-    )
+    `)
     .order("institution_name");
 
   if (searchIdInput.value.trim()) {
@@ -149,19 +107,18 @@ async function searchInstitutions() {
   if (searchTextInput.value.trim()) {
     query = query.ilike(
       "institution_name",
-      `%${searchTextInput.value.trim()}%`,
+      `%${searchTextInput.value.trim()}%`
     );
   }
 
-  if (zoneFilter.value) query = query.eq("zone_id", zoneFilter.value);
   if (regionFilter.value) query = query.eq("region_id", regionFilter.value);
   if (comunaFilter.value) query = query.eq("comuna_id", comunaFilter.value);
 
   const { data, error } = await query;
 
   if (error) {
-    alert("Error al buscar instituciones");
     console.error(error);
+    alert("Error al buscar instituciones");
     return;
   }
 
@@ -175,7 +132,7 @@ async function searchInstitutions() {
 }
 
 // =====================================================
-// RENDER FILA
+// RENDER
 // =====================================================
 function renderRow(record) {
   const tr = document.createElement("tr");
@@ -189,25 +146,10 @@ function renderRow(record) {
     <td>${record.observation || ""}</td>
     <td>—</td>
     <td>
-      ${
-        isAdmin
-          ? `
-        <button class="btn btn-sm btn-warning"
-                onclick="editInstitution(${record.id})">
-          Editar
-        </button>
-        <button class="btn btn-sm btn-danger"
-                onclick="deleteInstitution(${record.id})">
-          Eliminar
-        </button>
-      `
-          : `
-        <button class="btn btn-sm btn-outline-secondary"
-                onclick="copyEmail('${record.email}')">
-          Copiar
-        </button>
-      `
-      }
+      <button class="btn btn-sm btn-outline-secondary"
+              onclick="copyEmail('${record.email}')">
+        Copiar
+      </button>
     </td>
   `;
 
@@ -223,60 +165,3 @@ function copyEmail(email) {
     .then(() => alert("Correo copiado"))
     .catch(() => alert("No se pudo copiar"));
 }
-
-// =====================================================
-// CREATE (ADMIN)
-// =====================================================
-async function createInstitution(payload) {
-  if (!isAdmin) return;
-
-  const { error } = await supabaseClient.from("institutions").insert(payload);
-
-  if (error) {
-    alert("Error al crear institución");
-  } else {
-    searchInstitutions();
-  }
-}
-
-// =====================================================
-// UPDATE (ADMIN)
-// =====================================================
-async function editInstitution(id) {
-  if (!isAdmin) return;
-
-  const newName = prompt("Nuevo nombre de la institución:");
-  if (!newName) return;
-
-  const { error } = await supabaseClient
-    .from("institutions")
-    .update({ institution_name: newName })
-    .eq("id", id);
-
-  if (error) {
-    alert("Error al actualizar");
-  } else {
-    searchInstitutions();
-  }
-}
-
-// =====================================================
-// DELETE (ADMIN)
-// =====================================================
-async function deleteInstitution(id) {
-  if (!isAdmin) return;
-
-  if (!confirm("¿Eliminar esta institución?")) return;
-
-  const { error } = await supabaseClient
-    .from("institutions")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    alert("Error al eliminar");
-  } else {
-    searchInstitutions();
-  }
-}
-// =====================================================
