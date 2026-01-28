@@ -1,7 +1,7 @@
 // =====================================================
 // CONFIGURACIÓN GENERAL
 // =====================================================
-const SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co"; // TU URL
+const SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co";
 const jwtToken = localStorage.getItem("jwt");
 
 // =====================================================
@@ -12,15 +12,15 @@ if (!jwtToken) {
 }
 
 // =====================================================
-// SUPABASE CLIENT (JWT)
+// SUPABASE CLIENT (NO USAR nombre 'supabase')
 // =====================================================
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   jwtToken
 );
 
 // =====================================================
-// DECODIFICAR JWT (rol)
+// DECODIFICAR JWT (ROL)
 // =====================================================
 function parseJwt(token) {
   const base64Url = token.split(".")[1];
@@ -29,7 +29,7 @@ function parseJwt(token) {
 }
 
 const sessionData = parseJwt(jwtToken);
-const isAdmin = sessionData.is_admin === true;
+const isAdmin = sessionData.is_admin === true || sessionData.is_admin === "true";
 
 // =====================================================
 // ELEMENTOS DOM
@@ -73,27 +73,43 @@ regionFilter.addEventListener("change", searchInstitutions);
 comunaFilter.addEventListener("change", searchInstitutions);
 
 // =====================================================
-// CARGAR CATÁLOGOS (ZONA / REGIÓN / COMUNA)
+// CARGAR CATÁLOGOS
 // =====================================================
 async function loadCatalogs() {
-  const zones = await supabase.from("zones").select("id, name").order("name");
-  fillSelect(zoneFilter, zones.data);
+  const { data: zones } = await supabaseClient
+    .from("zones")
+    .select("id, name")
+    .order("name");
 
-  const regions = await supabase.from("regions").select("id, name").order("name");
-  fillSelect(regionFilter, regions.data);
+  fillSelect(zoneFilter, zones);
 
-  const comunas = await supabase.from("comunas").select("id, name").order("name");
-  fillSelect(comunaFilter, comunas.data);
+  const { data: regions } = await supabaseClient
+    .from("regions")
+    .select("id, name")
+    .order("name");
+
+  fillSelect(regionFilter, regions);
+
+  const { data: comunas } = await supabaseClient
+    .from("comunas")
+    .select("id, name")
+    .order("name");
+
+  fillSelect(comunaFilter, comunas);
 }
 
 function fillSelect(select, data) {
   select.innerHTML = `<option value="">${select.options[0].text}</option>`;
+
+  if (!data) return;
+
   data.forEach((item) => {
     const opt = document.createElement("option");
     opt.value = item.id;
     opt.textContent = item.name;
     select.appendChild(opt);
   });
+
   select.disabled = false;
 }
 
@@ -103,7 +119,7 @@ function fillSelect(select, data) {
 async function searchInstitutions() {
   resultsBody.innerHTML = "";
 
-  let query = supabase
+  let query = supabaseClient
     .from("institutions")
     .select(`
       id,
@@ -121,7 +137,10 @@ async function searchInstitutions() {
   }
 
   if (searchTextInput.value.trim()) {
-    query = query.ilike("institution_name", `%${searchTextInput.value.trim()}%`);
+    query = query.ilike(
+      "institution_name",
+      `%${searchTextInput.value.trim()}%`
+    );
   }
 
   if (zoneFilter.value) query = query.eq("zone_id", zoneFilter.value);
@@ -159,19 +178,25 @@ function renderRow(record) {
     <td>${record.observation || ""}</td>
     <td>—</td>
     <td>
-      ${isAdmin ? `
-        <button class="btn btn-sm btn-warning" onclick="editInstitution(${record.id})">
+      ${
+        isAdmin
+          ? `
+        <button class="btn btn-sm btn-warning"
+                onclick="editInstitution(${record.id})">
           Editar
         </button>
-        <button class="btn btn-sm btn-danger" onclick="deleteInstitution(${record.id})">
+        <button class="btn btn-sm btn-danger"
+                onclick="deleteInstitution(${record.id})">
           Eliminar
         </button>
-      ` : `
+      `
+          : `
         <button class="btn btn-sm btn-outline-secondary"
                 onclick="copyEmail('${record.email}')">
           Copiar
         </button>
-      `}
+      `
+      }
     </td>
   `;
 
@@ -194,7 +219,7 @@ function copyEmail(email) {
 async function createInstitution(payload) {
   if (!isAdmin) return;
 
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("institutions")
     .insert(payload);
 
@@ -214,7 +239,7 @@ async function editInstitution(id) {
   const newName = prompt("Nuevo nombre de la institución:");
   if (!newName) return;
 
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("institutions")
     .update({ institution_name: newName })
     .eq("id", id);
@@ -234,7 +259,7 @@ async function deleteInstitution(id) {
 
   if (!confirm("¿Eliminar esta institución?")) return;
 
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("institutions")
     .delete()
     .eq("id", id);
