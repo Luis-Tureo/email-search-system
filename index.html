@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>Sistema de Correos Institucionales</title>
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <div class="container-fluid">
+
+        <!-- Título principal -->
+        <div class="header-bar">
+
+            <div class="d-flex align-items-center">
+
+                <!-- Logo PJUD -->
+                <img src="assets/img/logo_pjud.png" class="logo-pjud" alt="Poder Judicial de Chile">
+
+                <!-- Títulos institucionales -->
+                <div class="ms-3">
+                    <div class="title-main">
+                        Sistema de Búsqueda de Correos Institucionales
+                    </div>
+                    <div class="subtitle-main">
+                        Tribunal de Familia de Ancud – Poder Judicial de Chile
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botón cerrar sistema -->
+            <button class="btn btn-danger mt-3" onclick="closeSystem()">
+                Cerrar sistema
+            </button>
+        </div>
+
+
+        <!-- Barra principal de búsqueda -->
+        <div class="row mb-3 g-2">
+
+            <!-- Buscar por ID -->
+            <div class="col-md-1">
+                <input type="text" id="buscar-id" class="form-control text-center"
+                    placeholder="Buscar ID"
+                    maxlength="4"
+                    inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <!-- Buscador general -->
+            <div class="col-md-4">
+                <input type="text" id="buscar" class="form-control"
+                    placeholder="Buscar institución, observación o correo...">
+            </div>
+
+            <!-- Zona -->
+            <div class="col-md-1">
+                <select id="zona" class="form-select" disabled>
+                    <option value="">Zona</option>
+                </select>
+            </div>
+
+            <!-- Región -->
+            <div class="col-md-1">
+                <select id="region" class="form-select" disabled>
+                    <option value="">Región</option>
+                </select>
+            </div>
+
+            <!-- Comuna -->
+            <div class="col-md-1">
+                <select id="comuna" class="form-select" disabled>
+                    <option value="">Comuna</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Contenedor de mensajes (toasts / alertas) -->
+        <div id="mensajes"></div>
+
+        <!-- Tabla de resultados -->
+        <div class="results-table">
+            <table class="table table-striped table-hover table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Institución</th>
+                        <th>Correo</th>
+                        <th>Región</th>
+                        <th>Comuna</th>
+                        <th>Observación</th>
+                        <th>Documento</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Contador inferior -->
+        <div class="mt-2">
+            <span id="counter">Registros encontrados: 0</span>
+        </div>
+    </div>
+    <!-- Lógica de la aplicación -->
+    <script src="assets/js/app.js"></script>
+
+</body>
+
+</html>
