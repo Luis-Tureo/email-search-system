@@ -170,7 +170,7 @@ function renderRow(r) {
     <td class="col-center">${pdfHtml}</td>
     <td class="col-center">
       <button class="btn btn-sm btn-copiar"
-              onclick="copyEmail('${r.email}')">
+              onclick="copyEmail('${r.email.replace(/'/g, "\\'")}')">
         Copiar
       </button>
     </td>
@@ -340,107 +340,233 @@ async function saveInstitutionChanges() {
 }
 
 // =====================================================
-// FUNCIONES PDF (CORREGIDAS - SIN DUPLICADOS)
+// FUNCIONES DE SANITIZACIÓN MEJORADAS
+// =====================================================
+
+// Función mejorada para sanitizar nombres de archivo
+function sanitizeFileName(filename) {
+  if (!filename) return `documento_${Date.now()}.pdf`;
+  
+  try {
+    // Obtener la extensión del archivo
+    const extension = filename.includes('.') 
+      ? '.' + filename.split('.').pop().toLowerCase()
+      : '.pdf';
+    
+    // Obtener el nombre sin extensión
+    const nameWithoutExt = filename.includes('.') 
+      ? filename.substring(0, filename.lastIndexOf('.'))
+      : filename;
+    
+    // Sanitizar el nombre
+    const sanitized = nameWithoutExt
+      // Normalizar caracteres unicode (elimina acentos)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      // Reemplazar espacios y caracteres problemáticos
+      .replace(/\s+/g, '_')
+      // Eliminar caracteres no permitidos en S3/Supabase
+      .replace(/[^a-zA-Z0-9._-]/g, '')
+      // Eliminar múltiples guiones bajos consecutivos
+      .replace(/_+/g, '_')
+      // Eliminar guiones al inicio o final
+      .replace(/^[-_]+|[-_]+$/g, '')
+      // Limitar longitud (máximo 100 caracteres)
+      .substring(0, 100)
+      .trim();
+    
+    // Si después de sanitizar queda vacío, usar un nombre por defecto
+    const finalName = sanitized || `documento_${Date.now()}`;
+    
+    return finalName + extension;
+  } catch (error) {
+    console.error('Error en sanitizeFileName:', error);
+    return `documento_${Date.now()}.pdf`;
+  }
+}
+
+// Función para generar un nombre de archivo ultra seguro
+function generateSafeFileName(originalName) {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000);
+  const extension = originalName.includes('.') 
+    ? originalName.split('.').pop().toLowerCase() 
+    : 'pdf';
+  
+  // Nombre seguro: timestamp_random.extension
+  return `${timestamp}_${random}.${extension}`;
+}
+
+// =====================================================
+// FUNCIONES PDF CORREGIDAS
 // =====================================================
 
 async function uploadNewPdf(id) {
   const file = editNewFileInput.files[0];
-  if (!file) return;
+  if (!file) {
+    showCopyToast("No se seleccionó ningún archivo");
+    return;
+  }
 
-  // Sanitizar nombre del archivo
-  const sanitizedName = file.name
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9._-]/g, '');
+  const originalName = file.name;
+  console.log('Intentando subir archivo:', originalName);
+
+  // Intentar primero con nombre sanitizado
+  const sanitizedName = sanitizeFileName(originalName);
+  const pathSanitized = `institution_${id}/${sanitizedName}`;
   
-  const fileName = `${Date.now()}_${sanitizedName}`;
-  const path = `institution_${id}/${fileName}`;
+  console.log('Nombre sanitizado:', sanitizedName);
+  console.log('Path sanitizado:', pathSanitized);
 
   try {
-    // 1. Subir archivo al Storage
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    // Intento 1: Subir con nombre sanitizado
+    console.log('Intento 1: Subiendo con nombre sanitizado...');
+    const { error: uploadError1 } = await supabaseClient.storage
       .from("institution-files")
-      .upload(path, file, {
+      .upload(pathSanitized, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
+        contentType: file.type || 'application/pdf'
       });
 
-    if (uploadError) {
-      console.error('Error al subir el archivo:', uploadError);
-      showCopyToast(`Error al subir: ${uploadError.message}`);
+    if (!uploadError1) {
+      console.log('Éxito con nombre sanitizado');
+      await insertFileRecord(id, pathSanitized, originalName);
+      await refreshEditFiles(parseInt(id));
+      editNewFileInput.value = "";
+      showCopyToast("Archivo subido correctamente");
       return;
     }
 
-    // 2. Insertar registro en la tabla
-    const { data: insertData, error: insertError } = await supabaseClient
-      .from("institution_files")
-      .insert({
-        institution_id: parseInt(id),
-        file_name: file.name,
-        file_path: path
-      });
-
-    if (insertError) {
-      console.error('Error al insertar registro:', insertError);
-      showCopyToast(`Error al guardar registro: ${insertError.message}`);
+    // Si falla el primer intento, verificar si es error "InvalidKey"
+    console.log('Error en intento 1:', uploadError1);
+    
+    if (uploadError1.message.includes('InvalidKey') || 
+        uploadError1.message.includes('Invalid key') ||
+        uploadError1.message.includes('400')) {
       
-      // Rollback: eliminar archivo si falla la inserción
-      await supabaseClient.storage
+      console.log('Detectado error InvalidKey, intentando con nombre seguro...');
+      
+      // Intento 2: Usar nombre seguro
+      const safeName = generateSafeFileName(originalName);
+      const pathSafe = `institution_${id}/${safeName}`;
+      
+      console.log('Intento 2: Subiendo con nombre seguro:', safeName);
+      
+      const { error: uploadError2 } = await supabaseClient.storage
         .from("institution-files")
-        .remove([path]);
+        .upload(pathSafe, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (!uploadError2) {
+        console.log('Éxito con nombre seguro');
+        await insertFileRecord(id, pathSafe, originalName);
+        await refreshEditFiles(parseInt(id));
+        editNewFileInput.value = "";
+        showCopyToast("Archivo subido con nombre simplificado");
+        return;
+      }
       
-      return;
+      console.log('Error en intento 2:', uploadError2);
+      throw new Error(uploadError2.message || 'Error al subir archivo');
     }
 
-    // 3. Actualizar lista de archivos EN EL MODAL
-    await refreshEditFiles(parseInt(id));
-    showCopyToast("Archivo subido correctamente");
-    editNewFileInput.value = "";
+    // Si no es error InvalidKey, lanzar el error original
+    throw new Error(uploadError1.message || 'Error al subir archivo');
 
   } catch (error) {
-    console.error('Error inesperado:', error);
-    showCopyToast("Error inesperado al procesar el archivo");
+    console.error('Error al subir archivo:', error);
+    showCopyToast(`Error: ${error.message || 'No se pudo subir el archivo'}`);
+  }
+}
+
+async function insertFileRecord(institutionId, filePath, originalName) {
+  try {
+    const { data, error } = await supabaseClient
+      .from("institution_files")
+      .insert({
+        institution_id: parseInt(institutionId),
+        file_name: originalName,
+        file_path: filePath,
+        uploaded_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error insertando registro:', error);
+      
+      // Intentar eliminar el archivo del storage si falla la inserción
+      try {
+        await supabaseClient.storage
+          .from("institution-files")
+          .remove([filePath]);
+      } catch (storageError) {
+        console.error('Error eliminando archivo del storage:', storageError);
+      }
+      
+      throw new Error(`Error al guardar registro: ${error.message}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error en insertFileRecord:', error);
+    throw error;
   }
 }
 
 async function refreshEditFiles(institutionId) {
   if (!institutionId) return;
   
-  const { data: updatedFiles, error } = await supabaseClient
-    .from("institution_files")
-    .select("id, file_name, file_path, uploaded_at, institution_id")
-    .eq("institution_id", institutionId)
-    .order("uploaded_at", { ascending: false });
+  try {
+    const { data: updatedFiles, error } = await supabaseClient
+      .from("institution_files")
+      .select("id, file_name, file_path, uploaded_at, institution_id")
+      .eq("institution_id", institutionId)
+      .order("uploaded_at", { ascending: false });
 
-  if (error) {
-    console.error('Error al cargar archivos:', error);
-    return;
+    if (error) {
+      console.error('Error al cargar archivos:', error);
+      return;
+    }
+
+    renderEditFiles(updatedFiles || []);
+  } catch (error) {
+    console.error('Error en refreshEditFiles:', error);
   }
-
-  renderEditFiles(updatedFiles || []);
 }
 
 function renderEditFiles(files) {
-  editFilesList.innerHTML = files.length
-    ? files.map(f => `
-        <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
-          <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
-          <div class="flex-grow-1">
-            <a href="${getPublicFileUrl(f.file_path)}" 
-               target="_blank" 
-               class="d-block text-truncate" style="max-width: 200px;">
-              ${f.file_name}
-            </a>
-            <small class="text-muted">
-              ${new Date(f.uploaded_at).toLocaleDateString('es-CL')}
-            </small>
-          </div>
-          <button class="btn btn-sm btn-outline-danger" 
-                  onclick="deleteFile(${f.id}, '${f.file_path}', ${f.institution_id})"
-                  title="Eliminar archivo">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>`).join("")
-    : `<div class="text-muted p-2 text-center">No hay documentos adjuntos</div>`;
+  try {
+    editFilesList.innerHTML = files.length
+      ? files.map(f => {
+          // Escapar comillas en el file_path para el onclick
+          const safeFilePath = f.file_path.replace(/'/g, "\\'");
+          return `
+            <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+              <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
+              <div class="flex-grow-1">
+                <a href="${getPublicFileUrl(f.file_path)}" 
+                   target="_blank" 
+                   class="d-block text-truncate" style="max-width: 200px;">
+                  ${f.file_name}
+                </a>
+                <small class="text-muted">
+                  ${new Date(f.uploaded_at).toLocaleDateString('es-CL')}
+                </small>
+              </div>
+              <button class="btn btn-sm btn-outline-danger" 
+                      onclick="deleteFile(${f.id}, '${safeFilePath}', ${f.institution_id})"
+                      title="Eliminar archivo">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>`;
+        }).join("")
+      : `<div class="text-muted p-2 text-center">No hay documentos adjuntos</div>`;
+  } catch (error) {
+    console.error('Error en renderEditFiles:', error);
+    editFilesList.innerHTML = `<div class="text-danger p-2 text-center">Error al cargar archivos</div>`;
+  }
 }
 
 async function deleteFile(fileId, filePath, institutionId) {
@@ -452,7 +578,11 @@ async function deleteFile(fileId, filePath, institutionId) {
       .from("institution-files")
       .remove([filePath]);
 
-    if (storageError) throw storageError;
+    if (storageError) {
+      console.error('Error eliminando de storage:', storageError);
+      showCopyToast(`Error al eliminar archivo: ${storageError.message}`);
+      return;
+    }
 
     // 2. Eliminar registro de la tabla
     const { error: dbError } = await supabaseClient
@@ -460,15 +590,19 @@ async function deleteFile(fileId, filePath, institutionId) {
       .delete()
       .eq("id", fileId);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('Error eliminando de base de datos:', dbError);
+      showCopyToast(`Error al eliminar registro: ${dbError.message}`);
+      return;
+    }
 
     // 3. Actualizar lista
     await refreshEditFiles(institutionId);
-    showCopyToast("Archivo eliminado");
+    showCopyToast("Archivo eliminado correctamente");
 
   } catch (error) {
-    console.error('Error al eliminar:', error);
-    showCopyToast(`Error: ${error.message}`);
+    console.error('Error inesperado en deleteFile:', error);
+    showCopyToast(`Error inesperado: ${error.message}`);
   }
 }
 
@@ -478,6 +612,10 @@ async function deleteFile(fileId, filePath, institutionId) {
 let toastTimeout;
 function showCopyToast(msg) {
   const t = document.getElementById("toast-copiar");
+  if (!t) {
+    console.error('Elemento toast-copiar no encontrado');
+    return;
+  }
   t.textContent = msg;
   t.classList.remove("show");
   void t.offsetWidth;
