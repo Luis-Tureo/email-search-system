@@ -191,12 +191,15 @@ async function editInstitution(id) {
     .from("institutions")
     .select(`
       id, institution_name, email, observation, region_id, comuna_id,
-      files:institution_files(id, file_name, file_path)
+      files:institution_files(id, file_name, file_path, uploaded_at, institution_id)
     `)
     .eq("id", id)
     .single();
 
-  if (error) return showCopyToast("Error al cargar");
+  if (error) {
+    console.error('Error al cargar institución:', error);
+    return showCopyToast("Error al cargar los datos");
+  }
 
   editIdInput.value = data.id;
   editInstitutionName.value = data.institution_name || "";
@@ -254,88 +257,219 @@ async function loadEditComunas(regionId, comunaId) {
 // GUARDAR CAMBIOS (NORMALIZADO)
 // =====================================================
 async function saveInstitutionChanges() {
-  let regionId = editRegion.value || null;
-  let comunaId = editComuna.value || null;
+  const btn = document.getElementById("btn-save-institution");
+  const originalText = btn.innerHTML;
+  
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
 
-  let finalRegion = REGION_NO_DEFINIDA_ID;
-  let finalComuna = COMUNA_NO_DEFINIDA_ID;
-  let finalZone = ZONE_NO_DEFINIDA_ID;
+    let regionId = editRegion.value || null;
+    let comunaId = editComuna.value || null;
 
-  // 🔵 Comuna seleccionada → domina todo
-  if (comunaId) {
-    const { data } = await supabaseClient
-      .from("comunas")
-      .select("id, region_id, regions(zone_id)")
-      .eq("id", comunaId)
-      .single();
+    let finalRegion = REGION_NO_DEFINIDA_ID;
+    let finalComuna = COMUNA_NO_DEFINIDA_ID;
+    let finalZone = ZONE_NO_DEFINIDA_ID;
 
-    finalComuna = data.id;
-    finalRegion = data.region_id;
-    finalZone = data.regions.zone_id;
+    // 🔵 Comuna seleccionada → domina todo
+    if (comunaId) {
+      const { data } = await supabaseClient
+        .from("comunas")
+        .select("id, region_id, regions(zone_id)")
+        .eq("id", comunaId)
+        .single();
+
+      if (data) {
+        finalComuna = data.id;
+        finalRegion = data.region_id;
+        finalZone = data.regions.zone_id;
+      }
+    }
+
+    // 🟡 Solo región
+    else if (regionId) {
+      const { data } = await supabaseClient
+        .from("regions")
+        .select("id, zone_id")
+        .eq("id", regionId)
+        .single();
+
+      if (data) {
+        finalRegion = data.id;
+        finalZone = data.zone_id;
+        finalComuna = COMUNA_NO_DEFINIDA_ID;
+      }
+    }
+
+    // Actualizar institución
+    const { error: updateError } = await supabaseClient
+      .from("institutions")
+      .update({
+        institution_name: editInstitutionName.value,
+        email: editEmail.value,
+        observation: editObservation.value,
+        region_id: finalRegion,
+        comuna_id: finalComuna,
+        zone_id: finalZone,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", editIdInput.value);
+
+    if (updateError) {
+      console.error('Error al actualizar institución:', updateError);
+      showCopyToast(`Error: ${updateError.message}`);
+      return;
+    }
+
+    // Subir archivo si hay uno nuevo
+    if (editNewFileInput.files.length) {
+      await uploadNewPdf(editIdInput.value);
+    }
+
+    editModal.hide();
+    showCopyToast("Cambios guardados correctamente");
+    searchInstitutions();
+
+  } catch (error) {
+    console.error('Error en saveInstitutionChanges:', error);
+    showCopyToast("Error al guardar cambios");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
   }
-
-  // 🟡 Solo región
-  else if (regionId) {
-    const { data } = await supabaseClient
-      .from("regions")
-      .select("id, zone_id")
-      .eq("id", regionId)
-      .single();
-
-    finalRegion = data.id;
-    finalZone = data.zone_id;
-    finalComuna = COMUNA_NO_DEFINIDA_ID;
-  }
-
-  await supabaseClient
-    .from("institutions")
-    .update({
-      institution_name: editInstitutionName.value,
-      email: editEmail.value,
-      observation: editObservation.value,
-      region_id: finalRegion,
-      comuna_id: finalComuna,
-      zone_id: finalZone
-    })
-    .eq("id", editIdInput.value);
-
-  if (editNewFileInput.files.length) await uploadNewPdf(editIdInput.value);
-
-  editModal.hide();
-  showCopyToast("Cambios guardados");
-  searchInstitutions();
 }
 
 // =====================================================
-// PDF
+// FUNCIONES PDF (CORREGIDAS - SIN DUPLICADOS)
 // =====================================================
-function renderEditFiles(files) {
-  editFilesList.innerHTML = files.length
-    ? files.map(f => `
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
-          <a href="${getPublicFileUrl(f.file_path)}" target="_blank">${f.file_name}</a>
-        </div>`).join("")
-    : `<div class="text-muted">No hay documentos adjuntos</div>`;
-}
 
 async function uploadNewPdf(id) {
   const file = editNewFileInput.files[0];
   if (!file) return;
 
-  const path = `institution_${id}/${Date.now()}_${file.name}`;
+  // Sanitizar nombre del archivo
+  const sanitizedName = file.name
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '');
+  
+  const fileName = `${Date.now()}_${sanitizedName}`;
+  const path = `institution_${id}/${fileName}`;
 
-  await supabaseClient.storage
-    .from("institution-files")
-    .upload(path, file);
+  try {
+    // 1. Subir archivo al Storage
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from("institution-files")
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-  await supabaseClient.from("institution_files").insert({
-    institution_id: id,
-    file_name: file.name,
-    file_path: path
-  });
+    if (uploadError) {
+      console.error('Error al subir el archivo:', uploadError);
+      showCopyToast(`Error al subir: ${uploadError.message}`);
+      return;
+    }
 
-  editNewFileInput.value = "";
+    // 2. Insertar registro en la tabla
+    const { data: insertData, error: insertError } = await supabaseClient
+      .from("institution_files")
+      .insert({
+        institution_id: parseInt(id),
+        file_name: file.name,
+        file_path: path
+      });
+
+    if (insertError) {
+      console.error('Error al insertar registro:', insertError);
+      showCopyToast(`Error al guardar registro: ${insertError.message}`);
+      
+      // Rollback: eliminar archivo si falla la inserción
+      await supabaseClient.storage
+        .from("institution-files")
+        .remove([path]);
+      
+      return;
+    }
+
+    // 3. Actualizar lista de archivos EN EL MODAL
+    await refreshEditFiles(parseInt(id));
+    showCopyToast("Archivo subido correctamente");
+    editNewFileInput.value = "";
+
+  } catch (error) {
+    console.error('Error inesperado:', error);
+    showCopyToast("Error inesperado al procesar el archivo");
+  }
+}
+
+async function refreshEditFiles(institutionId) {
+  if (!institutionId) return;
+  
+  const { data: updatedFiles, error } = await supabaseClient
+    .from("institution_files")
+    .select("id, file_name, file_path, uploaded_at, institution_id")
+    .eq("institution_id", institutionId)
+    .order("uploaded_at", { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar archivos:', error);
+    return;
+  }
+
+  renderEditFiles(updatedFiles || []);
+}
+
+function renderEditFiles(files) {
+  editFilesList.innerHTML = files.length
+    ? files.map(f => `
+        <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
+          <div class="flex-grow-1">
+            <a href="${getPublicFileUrl(f.file_path)}" 
+               target="_blank" 
+               class="d-block text-truncate" style="max-width: 200px;">
+              ${f.file_name}
+            </a>
+            <small class="text-muted">
+              ${new Date(f.uploaded_at).toLocaleDateString('es-CL')}
+            </small>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" 
+                  onclick="deleteFile(${f.id}, '${f.file_path}', ${f.institution_id})"
+                  title="Eliminar archivo">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>`).join("")
+    : `<div class="text-muted p-2 text-center">No hay documentos adjuntos</div>`;
+}
+
+async function deleteFile(fileId, filePath, institutionId) {
+  if (!confirm("¿Estás seguro de eliminar este archivo?")) return;
+
+  try {
+    // 1. Eliminar de Storage
+    const { error: storageError } = await supabaseClient.storage
+      .from("institution-files")
+      .remove([filePath]);
+
+    if (storageError) throw storageError;
+
+    // 2. Eliminar registro de la tabla
+    const { error: dbError } = await supabaseClient
+      .from("institution_files")
+      .delete()
+      .eq("id", fileId);
+
+    if (dbError) throw dbError;
+
+    // 3. Actualizar lista
+    await refreshEditFiles(institutionId);
+    showCopyToast("Archivo eliminado");
+
+  } catch (error) {
+    console.error('Error al eliminar:', error);
+    showCopyToast(`Error: ${error.message}`);
+  }
 }
 
 // =====================================================
