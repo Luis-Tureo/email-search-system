@@ -47,13 +47,96 @@ const editNewFileInput = document.getElementById("edit-new-file");
 // INIT
 // =====================================================
 document.addEventListener("DOMContentLoaded", () => {
+  const passInput = document.getElementById("login-password");
+
+  passInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doLogin();
+    }
+  });
+
+  passInput?.addEventListener("input", () => {
+    document.getElementById("login-error")?.classList.add("d-none");
+  });
+
+  // LOGIN DOM
+  loginScreen = document.getElementById("login-screen");
+  appContent = document.getElementById("app-content");
+
+  document.getElementById("btn-login")?.addEventListener("click", doLogin);
+  document.getElementById("logout-link")?.addEventListener("click", logout);
   loadCatalogs();
   searchInstitutions();
 
   document
     .getElementById("btn-save-institution")
     .addEventListener("click", saveInstitutionChanges);
+
+      // ESTADO LOGIN
+  if (sessionStorage.getItem("logged") === "true") {
+    loginScreen.classList.add("d-none");
+    appContent.classList.remove("d-none");
+  } else {
+    loginScreen.classList.remove("d-none");
+    appContent.classList.add("d-none");
+  }
 });
+
+// =====================================================
+// LOGIN
+// =====================================================
+async function doLogin() {
+  const btn = document.getElementById("btn-login");
+  const errorMsg = document.getElementById("login-error");
+
+  btn.disabled = true;
+
+  try {
+    const pass = document.getElementById("login-password").value;
+
+    const { data } = await supabaseClient
+      .from("system_credentials")
+      .select("password_hash")
+      .eq("active", true)
+      .single();
+
+    if (!data || pass !== data.password_hash) {
+      errorMsg.classList.remove("d-none");
+      return;
+    }
+
+    sessionStorage.setItem("logged", "true");
+    showApp();
+  } catch (err) {
+    console.error(err);
+    errorMsg.classList.remove("d-none");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showApp() {
+  loginScreen.classList.add("d-none");
+  appContent.classList.remove("d-none");
+}
+
+function logout() {
+
+  // borrar sesión
+  sessionStorage.removeItem("logged");
+
+  // limpiar contraseña
+  const passInput = document.getElementById("login-password");
+  if (passInput) passInput.value = "";
+
+  // ocultar error si estaba visible
+  document.getElementById("login-error")?.classList.add("d-none");
+
+  // mostrar login y ocultar app
+  loginScreen.classList.remove("d-none");
+  appContent.classList.add("d-none");
+}
 
 // =====================================================
 // EVENTOS FILTROS
