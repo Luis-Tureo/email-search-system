@@ -123,12 +123,6 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.4);
 }
 
-/* Botón cerrar sistema */
-.btn-danger {
-    font-weight: 600;
-}
-
-
 /* =====================================================
    BARRA INFERIOR DE ESTADO
    ===================================================== */
@@ -225,4 +219,79 @@ body {
 .toast-copiar.show {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* =====================================================
+   DOCUMENTOS PDF (PREVIEW)
+   ===================================================== */
+
+/* Enlace del preview */
+.pdf-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Icono PDF (Bootstrap Icons) */
+.pdf-icon {
+    font-size: 18px;
+    color: #b02a37;           /* Rojo PDF institucional */
+}
+
+/* Hover sutil (sin parecer botón) */
+.pdf-preview:hover .pdf-icon {
+    color: #8a1f2a;
+}
+
+/* Contador de múltiples PDFs */
+.pdf-badge {
+    background-color: #1f5aa6; /* Azul institucional */
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 1px 6px;
+    border-radius: 10px;
+    line-height: 1;
+}
+
+/* =====================================================
+   BOTÓN CERRAR SESIÓN (HEADER)
+   ===================================================== */
+
+.header-bar {
+    align-items: center; /* Corrección clave */
+}
+
+/* Botón cerrar sesión institucional */
+.btn-logout {
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    white-space: nowrap;
+}
+
+.btn-logout:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.btn-logout:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
+}
+
+#btn-clear-filters {
+    border-radius: 6px;
+    height: 38px;
+    font-weight: 600;
+}
+
+#btn-clear-filters:hover {
+    background-color: #dc3545;
+    color: white;
 }
