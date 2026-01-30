@@ -88,90 +88,11 @@ body {
     vertical-align: middle;
     z-index: 10;
     box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
-    white-space: nowrap; /* Evita que los títulos se dividan en varias líneas */
-}
-
-/* Control del desbordamiento en celdas */
-.table-container th,
-.table-container td {
-    max-width: 200px; /* Ancho máximo para las celdas */
-    overflow: hidden;
-    text-overflow: ellipsis; /* Muestra puntos suspensivos cuando el texto es muy largo */
-    white-space: nowrap; /* Evita que el texto se divida en múltiples líneas */
-    padding: 8px 12px; /* Padding uniforme */
-}
-
-/* Columnas específicas con anchos personalizados */
-.table-container th:nth-child(1), /* ID */
-.table-container td:nth-child(1) {
-    min-width: 60px;
-    max-width: 80px;
-    text-align: center;
-}
-
-.table-container th:nth-child(2), /* Institución */
-.table-container td:nth-child(2) {
-    min-width: 180px;
-    max-width: 250px;
-}
-
-.table-container th:nth-child(3), /* Correo */
-.table-container td:nth-child(3) {
-    min-width: 180px;
-    max-width: 250px;
-}
-
-.table-container th:nth-child(4), /* Zona */
-.table-container td:nth-child(4) {
-    min-width: 80px;
-    max-width: 100px;
-    text-align: center;
-}
-
-.table-container th:nth-child(5), /* Región */
-.table-container td:nth-child(5) {
-    min-width: 120px;
-    max-width: 150px;
-}
-
-.table-container th:nth-child(6), /* Comuna */
-.table-container td:nth-child(6) {
-    min-width: 120px;
-    max-width: 150px;
-}
-
-.table-container th:nth-child(7), /* Observación */
-.table-container td:nth-child(7) {
-    min-width: 150px;
-    max-width: 250px;
-    white-space: normal; /* Permite múltiples líneas para observaciones */
-    word-wrap: break-word; /* Permite que palabras largas se dividan */
-}
-
-.table-container th:nth-child(8), /* Documento */
-.table-container td:nth-child(8) {
-    min-width: 100px;
-    max-width: 150px;
-    text-align: center;
-}
-
-.table-container th:nth-child(9), /* Copiar */
-.table-container td:nth-child(9) {
-    min-width: 80px;
-    max-width: 100px;
-}
-
-.table-container th:nth-child(10), /* Editar */
-.table-container td:nth-child(10) {
-    min-width: 80px;
-    max-width: 100px;
 }
 
 .table {
     font-size: 13px;
     margin-bottom: 0;
-    table-layout: fixed; /* Fuerza que la tabla respete los anchos definidos */
-    width: 100%; /* Ocupa todo el ancho disponible */
 }
 
 /* Celdas */
