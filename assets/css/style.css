@@ -75,7 +75,7 @@ body {
     overflow: auto;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    margin-bottom: 70px;
+    margin-bottom: 65px;
 }
 
 /* Cabecera fija */
@@ -301,4 +301,8 @@ body {
 #btn-clear-filters:hover {
     background-color: #dc3545;
     color: white;
+}
+
+::-webkit-scrollbar {
+    display: none;
 }
