@@ -85,7 +85,7 @@ body {
 /* Cabecera fija */
 .table-container thead th {
     position: sticky;
-    top: -1;
+    top: -1px;
     background-color: #1f5aa6;   /* Azul claro institucional */
     color: white;
     text-align: center;
