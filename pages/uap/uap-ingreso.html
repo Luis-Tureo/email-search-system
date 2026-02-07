@@ -14,30 +14,6 @@
 
   <!-- CSS institucional -->
   <link rel="stylesheet" href="../../assets/css/style.css">
-
-  <!-- PRINT FIX -->
-  <style>
-    @media print {
-      body * {
-        visibility: hidden !important;
-      }
-
-      iframe#print-frame {
-        visibility: visible !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
-      }
-
-      @page {
-        size: A4;
-        margin: 20mm;
-      }
-    }
-  </style>
 </head>
 
 <body>
@@ -85,9 +61,8 @@
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
               <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut" required>
-              <button type="button" class="btn btn-secondary btn-search-rut"
-                data-rut-input="applicant_rut"
-                data-name-input="applicant_name">
+              <button type="button" class="btn btn-secondary btn-search-rut" data-rut-input="applicant_rut"
+                data-name-input="applicant_name" title="Buscar en historial">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -127,8 +102,7 @@
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
               <input type="text" class="form-control rut-field" id="victim_rut" name="victim_rut" required>
-              <button type="button" class="btn btn-secondary btn-search-rut"
-                data-rut-input="victim_rut"
+              <button type="button" class="btn btn-secondary btn-search-rut" data-rut-input="victim_rut"
                 data-name-input="victim_name">
                 <i class="bi bi-search"></i>
               </button>
@@ -164,8 +138,7 @@
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
               <input type="text" class="form-control rut-field" id="accused_rut" name="accused_rut" required>
-              <button type="button" class="btn btn-secondary btn-search-rut"
-                data-rut-input="accused_rut"
+              <button type="button" class="btn btn-secondary btn-search-rut" data-rut-input="accused_rut"
                 data-name-input="accused_name">
                 <i class="bi bi-search"></i>
               </button>
@@ -196,15 +169,18 @@
         <!-- ACCIÓN FINAL -->
         <div class="d-flex justify-content-between align-items-center mb-4">
 
+          <!-- Volver al inicio -->
           <button type="button" class="btn btn-outline-secondary" onclick="goToStart()">
             <i class="bi bi-arrow-left"></i> Volver al inicio
           </button>
 
           <div class="d-flex gap-2">
+            <!-- Limpiar formulario -->
             <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
               <i class="bi bi-trash"></i> Limpiar formulario
             </button>
 
+            <!-- Guardar -->
             <button type="button" class="btn btn-primary px-4"
               onclick="saveRecord().then(id => generatePdfAndStore(id))">
               Guardar registro y generar PDF
@@ -212,6 +188,8 @@
           </div>
 
         </div>
+
+
       </form>
 
     </div>
@@ -228,18 +206,8 @@
         </div>
 
         <div class="modal-body p-0">
-          <iframe id="print-frame" style="width:100%; height:80vh; border:none;"></iframe>
+          <iframe id="pdf-preview" style="width:100%; height:80vh; border:none;"></iframe>
         </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="printIframe()">
-            Imprimir
-          </button>
-          <button class="btn btn-secondary" data-bs-dismiss="modal">
-            Cerrar
-          </button>
-        </div>
-
       </div>
     </div>
   </div>
@@ -253,6 +221,7 @@
     window.SUPABASE_ANON_KEY = "sb_publishable_QZLp6C9qJgERaIIK8i92qw_2Cm8htUz";
   </script>
 
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="../../assets/js/vendors/pdfmake.min.js"></script>
@@ -261,18 +230,7 @@
   <script src="../../assets/js/uap/pjud-logo.js"></script>
   <script src="../../assets/js/uap/uap-form.js"></script>
 
-  <!-- PRINT SCRIPT -->
-  <script>
-    function printIframe() {
-      const iframe = document.getElementById('print-frame');
-      if (!iframe || !iframe.contentWindow) {
-        alert('No hay documento para imprimir');
-        return;
-      }
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    }
-  </script>
 
 </body>
+
 </html>
