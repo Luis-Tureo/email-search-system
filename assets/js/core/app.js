@@ -14,7 +14,7 @@ const COMUNA_NO_DEFINIDA_ID = 30;
 // =====================================================
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  SUPABASE_ANON_KEY,
 );
 
 // =====================================================
@@ -73,10 +73,11 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-save-institution")
     .addEventListener("click", saveInstitutionChanges);
 
-      // ESTADO LOGIN
+  // ESTADO LOGIN
   if (sessionStorage.getItem("logged") === "true") {
     loginScreen.classList.add("d-none");
     appContent.classList.remove("d-none");
+    applyRoleUI(sessionStorage.getItem("role"));
   } else {
     loginScreen.classList.remove("d-none");
     appContent.classList.add("d-none");
@@ -89,25 +90,28 @@ document.addEventListener("DOMContentLoaded", () => {
 async function doLogin() {
   const btn = document.getElementById("btn-login");
   const errorMsg = document.getElementById("login-error");
-
   btn.disabled = true;
 
   try {
-    const pass = document.getElementById("login-password").value;
+    const pass = document.getElementById("login-password").value.trim();
 
-    const { data } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from("system_credentials")
-      .select("password_hash")
+      .select("password_hash, role")
       .eq("active", true)
-      .single();
+      .eq("password_hash", pass)
+      .limit(1);
 
-    if (!data || pass !== data.password_hash) {
+    if (error || !data || data.length === 0) {
       errorMsg.classList.remove("d-none");
       return;
     }
 
     sessionStorage.setItem("logged", "true");
+    sessionStorage.setItem("role", data[0].role);
+
     showApp();
+    applyRoleUI(data[0].role);
   } catch (err) {
     console.error(err);
     errorMsg.classList.remove("d-none");
@@ -122,18 +126,12 @@ function showApp() {
 }
 
 function logout() {
-
-  // borrar sesión
   sessionStorage.removeItem("logged");
+  sessionStorage.removeItem("role");
 
-  // limpiar contraseña
-  const passInput = document.getElementById("login-password");
-  if (passInput) passInput.value = "";
-
-  // ocultar error si estaba visible
+  document.getElementById("login-password").value = "";
   document.getElementById("login-error")?.classList.add("d-none");
 
-  // mostrar login y ocultar app
   loginScreen.classList.remove("d-none");
   appContent.classList.add("d-none");
 }
@@ -172,7 +170,7 @@ async function loadCatalogs() {
 
 function fillSelect(select, data) {
   select.innerHTML = `<option value="">${select.options[0].text}</option>`;
-  data?.forEach(i => {
+  data?.forEach((i) => {
     const opt = document.createElement("option");
     opt.value = i.id;
     opt.textContent = i.name;
@@ -189,7 +187,8 @@ async function searchInstitutions() {
 
   let query = supabaseClient
     .from("institutions")
-    .select(`
+    .select(
+      `
       id,
       institution_name,
       email,
@@ -197,12 +196,19 @@ async function searchInstitutions() {
       region:regions(name),
       comuna:comunas(name),
       files:institution_files(file_name, file_path)
-    `)
+    `,
+    )
     .order("id");
 
   if (searchIdInput.value) query = query.eq("id", searchIdInput.value);
-  if (searchTextInput.value)
-    query = query.ilike("institution_name", `%${searchTextInput.value}%`);
+  
+  if (searchTextInput.value) {
+    const term = `%${searchTextInput.value}%`;
+    query = query.or(
+      `institution_name.ilike.${term},observation.ilike.${term}`,
+    );
+  }
+
   if (regionFilter.value) query = query.eq("region_id", regionFilter.value);
   if (comunaFilter.value) query = query.eq("comuna_id", comunaFilter.value);
 
@@ -217,9 +223,8 @@ async function searchInstitutions() {
 // STORAGE
 // =====================================================
 function getPublicFileUrl(path) {
-  return supabaseClient.storage
-    .from("institution-files")
-    .getPublicUrl(path).data.publicUrl;
+  return supabaseClient.storage.from("institution-files").getPublicUrl(path)
+    .data.publicUrl;
 }
 
 // =====================================================
@@ -228,41 +233,34 @@ function getPublicFileUrl(path) {
 function renderRow(r) {
   const tr = document.createElement("tr");
 
-  let pdfHtml = "";
-  if (r.files?.length) {
-    const pdfs = r.files.filter(f => f.file_name.endsWith(".pdf"));
-    if (pdfs.length) {
-      pdfHtml = `
-        <a href="${getPublicFileUrl(pdfs[0].file_path)}"
-           target="_blank"
-           class="pdf-preview">
-          <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
-          ${pdfs.length > 1 ? `<span class="pdf-badge">${pdfs.length}</span>` : ""}
-        </a>`;
-    }
-  }
+  const pdfs = r.files?.filter((f) => f.file_name.endsWith(".pdf")) || [];
+  const pdfHtml = pdfs.length
+    ? `
+    <a href="${getPublicFileUrl(pdfs[0].file_path)}" target="_blank" class="pdf-preview">
+      <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
+      ${pdfs.length > 1 ? `<span class="pdf-badge">${pdfs.length}</span>` : ""}
+    </a>`
+    : "";
 
   tr.innerHTML = `
     <td class="col-center">${r.id}</td>
     <td>${r.institution_name}</td>
     <td>${r.email.replaceAll(";", "<br>")}</td>
-    <td>${r.zone?.name || "No definida"}</td>
     <td>${r.region?.name || "No definida"}</td>
     <td>${r.comuna?.name || "No definida"}</td>
     <td>${r.observation || ""}</td>
     <td class="col-center">${pdfHtml}</td>
     <td class="col-center">
-      <button class="btn btn-sm btn-copiar"
-              onclick="copyEmail('${r.email.replace(/'/g, "\\'")}')">
+      <button class="btn btn-sm btn-copiar" onclick="copyEmail('${r.email.replace(/'/g, "\\'")}')">
         Copiar
       </button>
     </td>
-    <td class="col-center">
-      <button class="btn btn-sm btn-outline-primary"
-              onclick="editInstitution(${r.id})">
+    <td class="col-center col-edit">
+      <button class="btn btn-sm btn-outline-primary" onclick="editInstitution(${r.id})">
         <i class="bi bi-pencil-square"></i>
       </button>
-    </td>`;
+    </td>
+  `;
   resultsBody.appendChild(tr);
 }
 
@@ -270,24 +268,26 @@ function renderRow(r) {
 // EDITAR INSTITUCIÓN
 // =====================================================
 async function editInstitution(id) {
-  const { data, error } = await supabaseClient
+  if (sessionStorage.getItem("role") !== "admin") {
+    showCopyToast("No tiene permisos para editar");
+    return;
+  }
+
+  const { data } = await supabaseClient
     .from("institutions")
-    .select(`
+    .select(
+      `
       id, institution_name, email, observation, region_id, comuna_id,
-      files:institution_files(id, file_name, file_path, uploaded_at, institution_id)
-    `)
+      files:institution_files(id, file_name, file_path, uploaded_at)
+    `,
+    )
     .eq("id", id)
     .single();
 
-  if (error) {
-    console.error('Error al cargar institución:', error);
-    return showCopyToast("Error al cargar los datos");
-  }
-
   editIdInput.value = data.id;
-  editInstitutionName.value = data.institution_name || "";
-  editEmail.value = data.email || "";
-  editObservation.value = data.observation || "";
+  editInstitutionName.value = data.institution_name;
+  editEmail.value = data.email;
+  editObservation.value = data.observation;
 
   await loadEditRegions(data.region_id, data.comuna_id);
   renderEditFiles(data.files || []);
@@ -304,7 +304,7 @@ async function loadEditRegions(regionId, comunaId) {
     .order("name");
 
   editRegion.innerHTML = `<option value="">No definida</option>`;
-  regions.forEach(r => {
+  regions.forEach((r) => {
     const opt = new Option(r.name, r.id, false, r.id === regionId);
     editRegion.add(opt);
   });
@@ -315,7 +315,7 @@ async function loadEditRegions(regionId, comunaId) {
   editRegion.onchange = () => {
     editComuna.value = "";
     editComuna.disabled = !editRegion.value;
-    showCopyToast("Zona asignada automáticamente");
+    showCopyToast("Región cambiada");
     loadEditComunas(editRegion.value, null);
   };
 }
@@ -330,7 +330,7 @@ async function loadEditComunas(regionId, comunaId) {
     .eq("region_id", regionId)
     .order("name");
 
-  data.forEach(c => {
+  data.forEach((c) => {
     const opt = new Option(c.name, c.id, false, c.id === comunaId);
     editComuna.add(opt);
   });
@@ -342,10 +342,11 @@ async function loadEditComunas(regionId, comunaId) {
 async function saveInstitutionChanges() {
   const btn = document.getElementById("btn-save-institution");
   const originalText = btn.innerHTML;
-  
+
   try {
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+    btn.innerHTML =
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
 
     let regionId = editRegion.value || null;
     let comunaId = editComuna.value || null;
@@ -394,12 +395,12 @@ async function saveInstitutionChanges() {
         region_id: finalRegion,
         comuna_id: finalComuna,
         zone_id: finalZone,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq("id", editIdInput.value);
 
     if (updateError) {
-      console.error('Error al actualizar institución:', updateError);
+      console.error("Error al actualizar institución:", updateError);
       showCopyToast(`Error: ${updateError.message}`);
       return;
     }
@@ -412,9 +413,8 @@ async function saveInstitutionChanges() {
     editModal.hide();
     showCopyToast("Cambios guardados correctamente");
     searchInstitutions();
-
   } catch (error) {
-    console.error('Error en saveInstitutionChanges:', error);
+    console.error("Error en saveInstitutionChanges:", error);
     showCopyToast("Error al guardar cambios");
   } finally {
     btn.disabled = false;
@@ -429,41 +429,41 @@ async function saveInstitutionChanges() {
 // Función mejorada para sanitizar nombres de archivo
 function sanitizeFileName(filename) {
   if (!filename) return `documento_${Date.now()}.pdf`;
-  
+
   try {
     // Obtener la extensión del archivo
-    const extension = filename.includes('.') 
-      ? '.' + filename.split('.').pop().toLowerCase()
-      : '.pdf';
-    
+    const extension = filename.includes(".")
+      ? "." + filename.split(".").pop().toLowerCase()
+      : ".pdf";
+
     // Obtener el nombre sin extensión
-    const nameWithoutExt = filename.includes('.') 
-      ? filename.substring(0, filename.lastIndexOf('.'))
+    const nameWithoutExt = filename.includes(".")
+      ? filename.substring(0, filename.lastIndexOf("."))
       : filename;
-    
+
     // Sanitizar el nombre
     const sanitized = nameWithoutExt
       // Normalizar caracteres unicode (elimina acentos)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       // Reemplazar espacios y caracteres problemáticos
-      .replace(/\s+/g, '_')
+      .replace(/\s+/g, "_")
       // Eliminar caracteres no permitidos en S3/Supabase
-      .replace(/[^a-zA-Z0-9._-]/g, '')
+      .replace(/[^a-zA-Z0-9._-]/g, "")
       // Eliminar múltiples guiones bajos consecutivos
-      .replace(/_+/g, '_')
+      .replace(/_+/g, "_")
       // Eliminar guiones al inicio o final
-      .replace(/^[-_]+|[-_]+$/g, '')
+      .replace(/^[-_]+|[-_]+$/g, "")
       // Limitar longitud (máximo 100 caracteres)
       .substring(0, 100)
       .trim();
-    
+
     // Si después de sanitizar queda vacío, usar un nombre por defecto
     const finalName = sanitized || `documento_${Date.now()}`;
-    
+
     return finalName + extension;
   } catch (error) {
-    console.error('Error en sanitizeFileName:', error);
+    console.error("Error en sanitizeFileName:", error);
     return `documento_${Date.now()}.pdf`;
   }
 }
@@ -472,10 +472,10 @@ function sanitizeFileName(filename) {
 function generateSafeFileName(originalName) {
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 1000);
-  const extension = originalName.includes('.') 
-    ? originalName.split('.').pop().toLowerCase() 
-    : 'pdf';
-  
+  const extension = originalName.includes(".")
+    ? originalName.split(".").pop().toLowerCase()
+    : "pdf";
+
   // Nombre seguro: timestamp_random.extension
   return `${timestamp}_${random}.${extension}`;
 }
@@ -492,28 +492,28 @@ async function uploadNewPdf(id) {
   }
 
   const originalName = file.name;
-  console.log('Intentando subir archivo:', originalName);
+  console.log("Intentando subir archivo:", originalName);
 
   // Intentar primero con nombre sanitizado
   const sanitizedName = sanitizeFileName(originalName);
   const pathSanitized = `institution_${id}/${sanitizedName}`;
-  
-  console.log('Nombre sanitizado:', sanitizedName);
-  console.log('Path sanitizado:', pathSanitized);
+
+  console.log("Nombre sanitizado:", sanitizedName);
+  console.log("Path sanitizado:", pathSanitized);
 
   try {
     // Intento 1: Subir con nombre sanitizado
-    console.log('Intento 1: Subiendo con nombre sanitizado...');
+    console.log("Intento 1: Subiendo con nombre sanitizado...");
     const { error: uploadError1 } = await supabaseClient.storage
       .from("institution-files")
       .upload(pathSanitized, file, {
-        cacheControl: '3600',
+        cacheControl: "3600",
         upsert: false,
-        contentType: file.type || 'application/pdf'
+        contentType: file.type || "application/pdf",
       });
 
     if (!uploadError1) {
-      console.log('Éxito con nombre sanitizado');
+      console.log("Éxito con nombre sanitizado");
       await insertFileRecord(id, pathSanitized, originalName);
       await refreshEditFiles(parseInt(id));
       editNewFileInput.value = "";
@@ -522,46 +522,48 @@ async function uploadNewPdf(id) {
     }
 
     // Si falla el primer intento, verificar si es error "InvalidKey"
-    console.log('Error en intento 1:', uploadError1);
-    
-    if (uploadError1.message.includes('InvalidKey') || 
-        uploadError1.message.includes('Invalid key') ||
-        uploadError1.message.includes('400')) {
-      
-      console.log('Detectado error InvalidKey, intentando con nombre seguro...');
-      
+    console.log("Error en intento 1:", uploadError1);
+
+    if (
+      uploadError1.message.includes("InvalidKey") ||
+      uploadError1.message.includes("Invalid key") ||
+      uploadError1.message.includes("400")
+    ) {
+      console.log(
+        "Detectado error InvalidKey, intentando con nombre seguro...",
+      );
+
       // Intento 2: Usar nombre seguro
       const safeName = generateSafeFileName(originalName);
       const pathSafe = `institution_${id}/${safeName}`;
-      
-      console.log('Intento 2: Subiendo con nombre seguro:', safeName);
-      
+
+      console.log("Intento 2: Subiendo con nombre seguro:", safeName);
+
       const { error: uploadError2 } = await supabaseClient.storage
         .from("institution-files")
         .upload(pathSafe, file, {
-          cacheControl: '3600',
-          upsert: false
+          cacheControl: "3600",
+          upsert: false,
         });
 
       if (!uploadError2) {
-        console.log('Éxito con nombre seguro');
+        console.log("Éxito con nombre seguro");
         await insertFileRecord(id, pathSafe, originalName);
         await refreshEditFiles(parseInt(id));
         editNewFileInput.value = "";
         showCopyToast("Archivo subido con nombre simplificado");
         return;
       }
-      
-      console.log('Error en intento 2:', uploadError2);
-      throw new Error(uploadError2.message || 'Error al subir archivo');
+
+      console.log("Error en intento 2:", uploadError2);
+      throw new Error(uploadError2.message || "Error al subir archivo");
     }
 
     // Si no es error InvalidKey, lanzar el error original
-    throw new Error(uploadError1.message || 'Error al subir archivo');
-
+    throw new Error(uploadError1.message || "Error al subir archivo");
   } catch (error) {
-    console.error('Error al subir archivo:', error);
-    showCopyToast(`Error: ${error.message || 'No se pudo subir el archivo'}`);
+    console.error("Error al subir archivo:", error);
+    showCopyToast(`Error: ${error.message || "No se pudo subir el archivo"}`);
   }
 }
 
@@ -573,34 +575,34 @@ async function insertFileRecord(institutionId, filePath, originalName) {
         institution_id: parseInt(institutionId),
         file_name: originalName,
         file_path: filePath,
-        uploaded_at: new Date().toISOString()
+        uploaded_at: new Date().toISOString(),
       });
 
     if (error) {
-      console.error('Error insertando registro:', error);
-      
+      console.error("Error insertando registro:", error);
+
       // Intentar eliminar el archivo del storage si falla la inserción
       try {
         await supabaseClient.storage
           .from("institution-files")
           .remove([filePath]);
       } catch (storageError) {
-        console.error('Error eliminando archivo del storage:', storageError);
+        console.error("Error eliminando archivo del storage:", storageError);
       }
-      
+
       throw new Error(`Error al guardar registro: ${error.message}`);
     }
-    
+
     return data;
   } catch (error) {
-    console.error('Error en insertFileRecord:', error);
+    console.error("Error en insertFileRecord:", error);
     throw error;
   }
 }
 
 async function refreshEditFiles(institutionId) {
   if (!institutionId) return;
-  
+
   try {
     const { data: updatedFiles, error } = await supabaseClient
       .from("institution_files")
@@ -609,23 +611,24 @@ async function refreshEditFiles(institutionId) {
       .order("uploaded_at", { ascending: false });
 
     if (error) {
-      console.error('Error al cargar archivos:', error);
+      console.error("Error al cargar archivos:", error);
       return;
     }
 
     renderEditFiles(updatedFiles || []);
   } catch (error) {
-    console.error('Error en refreshEditFiles:', error);
+    console.error("Error en refreshEditFiles:", error);
   }
 }
 
 function renderEditFiles(files) {
   try {
     editFilesList.innerHTML = files.length
-      ? files.map(f => {
-          // Escapar comillas en el file_path para el onclick
-          const safeFilePath = f.file_path.replace(/'/g, "\\'");
-          return `
+      ? files
+          .map((f) => {
+            // Escapar comillas en el file_path para el onclick
+            const safeFilePath = f.file_path.replace(/'/g, "\\'");
+            return `
             <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
               <i class="bi bi-file-earmark-pdf-fill pdf-icon"></i>
               <div class="flex-grow-1">
@@ -635,7 +638,7 @@ function renderEditFiles(files) {
                   ${f.file_name}
                 </a>
                 <small class="text-muted">
-                  ${new Date(f.uploaded_at).toLocaleDateString('es-CL')}
+                  ${new Date(f.uploaded_at).toLocaleDateString("es-CL")}
                 </small>
               </div>
               <button class="btn btn-sm btn-outline-danger" 
@@ -644,10 +647,11 @@ function renderEditFiles(files) {
                 <i class="bi bi-trash"></i>
               </button>
             </div>`;
-        }).join("")
+          })
+          .join("")
       : `<div class="text-muted p-2 text-center">No hay documentos adjuntos</div>`;
   } catch (error) {
-    console.error('Error en renderEditFiles:', error);
+    console.error("Error en renderEditFiles:", error);
     editFilesList.innerHTML = `<div class="text-danger p-2 text-center">Error al cargar archivos</div>`;
   }
 }
@@ -662,7 +666,7 @@ async function deleteFile(fileId, filePath, institutionId) {
       .remove([filePath]);
 
     if (storageError) {
-      console.error('Error eliminando de storage:', storageError);
+      console.error("Error eliminando de storage:", storageError);
       showCopyToast(`Error al eliminar archivo: ${storageError.message}`);
       return;
     }
@@ -674,7 +678,7 @@ async function deleteFile(fileId, filePath, institutionId) {
       .eq("id", fileId);
 
     if (dbError) {
-      console.error('Error eliminando de base de datos:', dbError);
+      console.error("Error eliminando de base de datos:", dbError);
       showCopyToast(`Error al eliminar registro: ${dbError.message}`);
       return;
     }
@@ -682,9 +686,8 @@ async function deleteFile(fileId, filePath, institutionId) {
     // 3. Actualizar lista
     await refreshEditFiles(institutionId);
     showCopyToast("Archivo eliminado correctamente");
-
   } catch (error) {
-    console.error('Error inesperado en deleteFile:', error);
+    console.error("Error inesperado en deleteFile:", error);
     showCopyToast(`Error inesperado: ${error.message}`);
   }
 }
@@ -696,7 +699,7 @@ let toastTimeout;
 function showCopyToast(msg) {
   const t = document.getElementById("toast-copiar");
   if (!t) {
-    console.error('Elemento toast-copiar no encontrado');
+    console.error("Elemento toast-copiar no encontrado");
     return;
   }
   t.textContent = msg;
@@ -715,4 +718,13 @@ function copyEmail(email) {
     .writeText(email)
     .then(() => showCopyToast("Correo copiado"))
     .catch(() => showCopyToast("No se pudo copiar"));
+}
+// =====================================================
+// ROLES
+// =====================================================
+function applyRoleUI(role) {
+  const isAdmin = role === "admin";
+  document.querySelectorAll(".col-edit").forEach((el) => {
+    el.style.display = isAdmin ? "" : "none";
+  });
 }
