@@ -1,6 +1,6 @@
 
 {
   "routes": [
-    { "src": "/uap/uap-ingreso", "dest": "/uap/uap-ingreso.html" }
+    { "src": "/uap-ingreso", "dest": "../../pages/uap/uap-ingreso.html" }
   ]
 }
