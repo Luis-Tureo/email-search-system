@@ -167,11 +167,28 @@
         </div>
 
         <!-- ACCIÓN FINAL -->
-        <div class="text-end mb-4">
-          <button type="button" class="btn btn-primary px-4" onclick="saveRecord().then(id => generatePdfAndStore(id))">
-            Guardar registro y generar PDF
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+          <!-- Volver al inicio -->
+          <button type="button" class="btn btn-outline-secondary" onclick="goToStart()">
+            <i class="bi bi-arrow-left"></i> Volver al inicio
           </button>
+
+          <div class="d-flex gap-2">
+            <!-- Limpiar formulario -->
+            <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
+              <i class="bi bi-trash"></i> Limpiar formulario
+            </button>
+
+            <!-- Guardar -->
+            <button type="button" class="btn btn-primary px-4"
+              onclick="saveRecord().then(id => generatePdfAndStore(id))">
+              Guardar registro y generar PDF
+            </button>
+          </div>
+
         </div>
+
 
       </form>
 

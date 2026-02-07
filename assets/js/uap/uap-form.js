@@ -326,3 +326,35 @@ function loadTestData() {
 
   console.log("Datos de prueba cargados");
 }
+
+function goToStart() {
+  // Oculta formulario
+  document.getElementById("form-uap")?.classList.add("d-none");
+
+  // Muestra selección inicial
+  document.getElementById("procedure-selection")?.classList.remove("d-none");
+
+  // Resetea estado
+  formState.procedureType = null;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function clearForm() {
+  if (!confirm("¿Está seguro de borrar todos los datos del formulario?")) return;
+
+  const form = document.getElementById("form-uap");
+  if (!form) return;
+
+  form.reset();
+
+  // Limpia inputs manuales por seguridad
+  form.querySelectorAll("input, textarea, select").forEach(el => {
+    if (el.type !== "button" && el.type !== "submit") {
+      el.value = "";
+    }
+  });
+
+  console.log("Formulario limpiado");
+}
+
