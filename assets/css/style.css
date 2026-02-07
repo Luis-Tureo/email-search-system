@@ -306,3 +306,29 @@ body {
     background-color: #dc3545;
     color: white;
 }
+
+/* =====================================================
+   AJUSTES SOLO PARA IMPRESIÓN
+   ===================================================== */
+@media print {
+
+    body {
+        background: #ffffff !important;
+        font-size: 12px;
+    }
+
+    .container-fluid {
+        background: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    /* Ocultar UI que nunca debe imprimirse */
+    .header-bar,
+    .btn,
+    .toast-copiar,
+    .table-container {
+        display: none !important;
+    }
+}
