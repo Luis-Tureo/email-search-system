@@ -6,10 +6,8 @@
   <title>Ingreso UAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Bootstrap 5 -->
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
   <!-- CSS institucional -->
@@ -21,48 +19,50 @@
   <div class="container-fluid d-flex justify-content-center">
     <div class="w-100" style="max-width:1100px;">
 
-      <!-- HEADER -->
+      <!-- ================= HEADER ================= -->
       <div class="header-bar">
         <div>
           <h1 class="title-main">Ingreso UAP</h1>
-          <div class="subtitle-main">
-            Registro de Denuncias y Medidas de Protección
-          </div>
+          <div class="subtitle-main">Registro de Denuncias y Medidas de Protección</div>
         </div>
         <button class="btn btn-logout">Cerrar sesión</button>
       </div>
 
-      <!-- SELECCIÓN TIPO -->
+      <!-- ================= SELECCIÓN DE TRÁMITE ================= -->
       <section id="procedure-selection" class="my-5 text-center">
         <h5 class="mb-4">Seleccione el tipo de trámite</h5>
-
         <div class="d-flex justify-content-center gap-3">
           <button class="btn btn-primary px-4" onclick="startProcedure('vif')">
             Denuncia Violencia Intrafamiliar
           </button>
-          <button class="btn btn-primary px-4" onclick="startProcedure('mp')">
+          <button class="btn btn-primary px-4" onclick="startProtectionMeasureProcedure()">
             Medida de Protección
           </button>
+
         </div>
       </section>
 
-      <!-- FORMULARIO -->
+      <!-- ================= FORMULARIO VIOLENCIA INTRAFAMILIAR================= -->
       <form id="form-uap" class="d-none">
 
+        <!-- Datos de prueba -->
         <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="loadTestData()">
           Cargar datos de prueba
         </button>
 
-        <!-- ================= DATOS SOLICITANTE ================= -->
-        <h5 class="mb-3">Datos del Denunciante / Solicitante</h5>
+        <!-- ===================================================== -->
+        <!-- DENUNCIANTE-->
+        <!-- ===================================================== -->
+        <h5 class="mb-3">Datos del Denunciante</h5>
         <div class="row g-3 mb-4">
 
+          <!-- Identificación -->
           <div class="col-md-4">
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
               <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut" required>
               <button type="button" class="btn btn-secondary btn-search-rut" data-rut-input="applicant_rut"
-                data-name-input="applicant_name" title="Buscar en historial">
+                data-name-input="applicant_name">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -73,16 +73,7 @@
             <input type="text" class="form-control" id="applicant_name" name="applicant_name" required>
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Actividad</label>
-            <input type="text" class="form-control" name="applicant_activity">
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Domicilio *</label>
-            <input type="text" class="form-control" name="applicant_address" required>
-          </div>
-
+          <!-- Contacto -->
           <div class="col-md-6">
             <label class="form-label">Teléfono</label>
             <input type="text" class="form-control" name="applicant_phone">
@@ -92,12 +83,40 @@
             <label class="form-label">Correo electrónico</label>
             <input type="email" class="form-control" name="applicant_email">
           </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Forma de notificación autorizada</label>
+            <select class="form-select" name="notification_authorized_method" id="notification_authorized_method">
+              <option value="" selected>Seleccione una opción</option>
+              <option value="Correo electrónico">Correo electrónico</option>
+              <option value="Teléfono">Teléfono</option>
+              <option value="Carta">Carta</option>
+              <option value="Presencial">Presencial</option>
+              <option value="Otra">Otra</option>
+            </select>
+          </div>
+
+
+          <!-- Domicilio -->
+          <div class="col-md-6">
+            <label class="form-label">Domicilio *</label>
+            <input type="text" class="form-control" name="applicant_address" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Actividad</label>
+            <input type="text" class="form-control" name="applicant_activity">
+          </div>
+
         </div>
 
-        <!-- ================= DATOS VÍCTIMA ================= -->
-        <h5 class="mb-3">Datos de la Víctima / NNA</h5>
+        <!-- ===================================================== -->
+        <!-- VÍCTIMA-->
+        <!-- ===================================================== -->
+        <h5 class="mb-3">Datos de la Víctima</h5>
         <div class="row g-3 mb-4">
 
+          <!-- Identificación -->
           <div class="col-md-4">
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
@@ -114,26 +133,60 @@
             <input type="text" class="form-control" id="victim_name" name="victim_name" required>
           </div>
 
-          <div class="col-md-4">
+          <!-- Nacimiento / Edad -->
+          <div class="col-md-6">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input type="date" class="form-control" name="victim_birthdate">
+          </div>
+
+          <div class="col-md-6">
             <label class="form-label">Edad</label>
-            <input type="number" class="form-control" name="victim_age">
+            <input type="number" class="form-control" name="victim_age" readonly>
           </div>
 
-          <div class="col-md-8">
-            <label class="form-label">Escolaridad</label>
-            <input type="text" class="form-control" name="victim_schooling">
+          <div class="col-md-4">
+            <label class="form-label">Etapa de vida de la víctima</label>
+            <select class="form-select" name="victim_life_stage" id="victim_life_stage">
+              <option value="" selected>Se selecciona automáticamente</option>
+              <option value="Niñez">Niñez (0 a 13 años)</option>
+              <option value="Adolescente">Adolescente (14 a 17 años)</option>
+              <option value="Adulto">Adulto (18 a 59 años)</option>
+              <option value="Adulto mayor">Adulto mayor (60 años o más)</option>
+            </select>
           </div>
 
+
+          <!-- Contacto -->
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" name="victim_phone">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control" name="victim_email">
+          </div>
+
+          <!-- Domicilio -->
           <div class="col-md-12">
             <label class="form-label">Domicilio *</label>
             <input type="text" class="form-control" name="victim_address" required>
           </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Actividad</label>
+            <input type="text" class="form-control" name="victim_activity">
+          </div>
+
         </div>
 
-        <!-- ================= DATOS DENUNCIADO ================= -->
-        <h5 class="mb-3">Datos del Denunciado / Solicitado</h5>
+        <!-- ===================================================== -->
+        <!-- DENUNCIADO -->
+        <!-- ===================================================== -->
+        <h5 class="mb-3">Datos del Denunciado</h5>
         <div class="row g-3 mb-4">
 
+          <!-- Identificación -->
           <div class="col-md-4">
             <label class="form-label">RUN *</label>
             <div class="d-flex gap-2">
@@ -150,6 +203,23 @@
             <input type="text" class="form-control" id="accused_name" name="accused_name" required>
           </div>
 
+          <!-- Contacto -->
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" name="accused_phone">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control" name="accused_email">
+          </div>
+
+          <!-- Domicilio -->
+          <div class="col-md-12">
+            <label class="form-label">Domicilio *</label>
+            <input type="text" class="form-control" name="accused_address" required>
+          </div>
+
           <div class="col-md-6">
             <label class="form-label">Actividad</label>
             <input type="text" class="form-control" name="accused_activity">
@@ -157,60 +227,297 @@
 
           <div class="col-md-6">
             <label class="form-label">Vínculo / parentesco</label>
-            <input type="text" class="form-control" name="relationship">
+            <select class="form-select" name="relationship" id="relationship">
+              <option value="" selected>Seleccione parentesco</option>
+              <option value="Padre">Padre</option>
+              <option value="Madre">Madre</option>
+              <option value="Hijo/a">Hijo/a</option>
+              <option value="Cónyuge">Cónyuge</option>
+              <option value="Conviviente">Conviviente</option>
+              <option value="Ex pareja">Ex pareja</option>
+              <option value="Familiar">Familiar</option>
+              <option value="Otro">Otro</option>
+              <option value="Desconocido">Desconocido</option>
+            </select>
+
           </div>
 
-          <div class="col-md-12">
-            <label class="form-label">Domicilio *</label>
-            <input type="text" class="form-control" name="accused_address" required>
+        </div>
+      </form>
+
+      <!-- FORMULARIO MEDIDA DE PROTECCIÓN-->
+      <form id="form-mp" class="d-none">
+
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadTestDataMP()">
+          Cargar datos de prueba MP
+        </button>
+
+        <!-- ================= DATOS NNA ================= -->
+        <h5 class="mb-3">Datos del Niño/Niña/Adolescente (NNA)</h5>
+        <div class="row g-3 mb-4">
+
+          <div class="col-md-6">
+            <label class="form-label">Nombre completo</label>
+            <input class="form-control" name="mp_child_name" autocomplete="off">
           </div>
+
+          <div class="col-md-3">
+            <label class="form-label">RUN</label>
+            <input class="form-control" name="mp_child_rut" autocomplete="off">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input class="form-control" type="date" name="mp_child_birthdate">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Edad</label>
+            <input class="form-control" name="mp_child_age" readonly>
+            <div class="form-text">Se calcula automáticamente.</div>
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">Domicilio</label>
+            <input class="form-control" name="mp_child_address" autocomplete="off">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Teléfono</label>
+            <input class="form-control" name="mp_child_phone" autocomplete="off">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            <input class="form-control" type="email" name="mp_child_email" autocomplete="off">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Escolaridad</label>
+            <select class="form-select" name="mp_child_schooling">
+              <option value="">Seleccione escolaridad</option>
+              <option>Preescolar</option>
+              <option>Básica incompleta</option>
+              <option>Básica completa</option>
+              <option>Media incompleta</option>
+              <option>Media completa</option>
+              <option>Técnico profesional</option>
+              <option>Superior incompleta</option>
+              <option>Superior completa</option>
+              <option>Otra</option>
+              <option>No aplica / Sin información</option>
+            </select>
+          </div>
+
         </div>
 
-        <!-- ACCIÓN FINAL -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- ================= DATOS SOLICITANTE (REQUERENTES) ================= -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h5 class="mb-3">Datos del Solicitante (Requirente)</h5>
 
-          <!-- Volver al inicio -->
-          <button type="button" class="btn btn-outline-secondary" onclick="goToStart()">
-            <i class="bi bi-arrow-left"></i> Volver al inicio
+          <!-- Botón + para agregar otro requirente -->
+          <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="addProtectionMeasureRequester()">
+            <i class="bi bi-plus-circle"></i> Agregar otro requirente
           </button>
+        </div>
 
-          <div class="d-flex gap-2">
-            <!-- Limpiar formulario -->
-            <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
-              <i class="bi bi-trash"></i> Limpiar formulario
-            </button>
+        <!-- Contenedor donde se van agregando los requirentes -->
+        <div id="mp-requesters">
+          <!-- Requirente #1 (siempre visible) -->
+          <div class="mp-requester border rounded-3 p-3 mb-3" data-requester-index="1">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>Requirente #1</strong>
+              <!-- El primero no se elimina -->
+              <button type="button" class="btn btn-outline-danger btn-sm d-none" data-action="remove-requester">
+                <i class="bi bi-dash-circle"></i> Quitar
+              </button>
+            </div>
 
-            <!-- Guardar -->
-            <button type="button" class="btn btn-primary px-4"
-              onclick="saveRecord().then(id => generatePdfAndStore(id))">
-              Guardar registro y generar PDF
-            </button>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre completo</label>
+                <input class="form-control" name="mp_requester_1_name" autocomplete="off">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">RUN</label>
+                <input class="form-control" name="mp_requester_1_rut" autocomplete="off">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Actividad</label>
+                <select class="form-select" name="mp_requester_1_activity">
+                  <option value="">Seleccione actividad</option>
+                  <option>Sin actividad</option>
+                  <option>Trabajador/a dependiente</option>
+                  <option>Trabajador/a independiente</option>
+                  <option>Dueña/o de casa</option>
+                  <option>Estudiante</option>
+                  <option>Cesante</option>
+                  <option>Jubilado/a</option>
+                  <option>Otra</option>
+                </select>
+              </div>
+
+              <div class="col-md-9">
+                <label class="form-label">Domicilio</label>
+                <input class="form-control" name="mp_requester_1_address" autocomplete="off">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Teléfono</label>
+                <input class="form-control" name="mp_requester_1_phone" autocomplete="off">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">E-mail</label>
+                <input class="form-control" type="email" name="mp_requester_1_email" autocomplete="off">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Vínculo / parentesco con el NNA</label>
+                <select class="form-select" name="mp_requester_1_relationship">
+                  <option value="">Seleccione parentesco</option>
+                  <option>Padre</option>
+                  <option>Madre</option>
+                  <option>Hijo/a</option>
+                  <option>Cónyuge</option>
+                  <option>Conviviente</option>
+                  <option>Ex pareja</option>
+                  <option>Familiar</option>
+                  <option>Otro</option>
+                  <option>Desconocido</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= DATOS SOLICITADO ================= -->
+        <h5 class="mb-3">Datos del Solicitado</h5>
+        <div class="row g-3 mb-4">
+
+          <div class="col-md-6">
+            <label class="form-label">Nombre completo</label>
+            <input class="form-control" name="mp_requested_name" autocomplete="off">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">RUN</label>
+            <input class="form-control" name="mp_requested_rut" autocomplete="off">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Actividad</label>
+            <select class="form-select" name="mp_requested_activity">
+              <option value="">Seleccione actividad</option>
+              <option>Sin actividad</option>
+              <option>Trabajador/a dependiente</option>
+              <option>Trabajador/a independiente</option>
+              <option>Dueña/o de casa</option>
+              <option>Estudiante</option>
+              <option>Cesante</option>
+              <option>Jubilado/a</option>
+              <option>Otra</option>
+            </select>
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">Domicilio</label>
+            <input class="form-control" name="mp_requested_address" autocomplete="off">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Teléfono</label>
+            <input class="form-control" name="mp_requested_phone" autocomplete="off">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            <input class="form-control" type="email" name="mp_requested_email" autocomplete="off">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Vínculo / parentesco con el NNA</label>
+            <select class="form-select" name="mp_requested_relationship">
+              <option value="">Seleccione parentesco</option>
+              <option>Padre</option>
+              <option>Madre</option>
+              <option>Hijo/a</option>
+              <option>Cónyuge</option>
+              <option>Conviviente</option>
+              <option>Ex pareja</option>
+              <option>Familiar</option>
+              <option>Otro</option>
+              <option>Desconocido</option>
+            </select>
           </div>
 
         </div>
-
 
       </form>
 
+      <!-- ================= ACCIONES (COMPARTIDAS VIF / MP) ================= -->
+      <div id="procedure-actions" class="d-none d-flex justify-content-between align-items-center mb-4">
+
+        <button type="button" class="btn btn-outline-secondary" onclick="handleGoToStart()">
+          <i class="bi bi-arrow-left"></i> Volver al inicio
+        </button>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-danger" onclick="handleOpenClearFormModal()">
+            <i class="bi bi-eraser"></i> Limpiar formulario
+          </button>
+
+          <button type="button" class="btn btn-outline-primary" onclick="handleGeneratePdfAndStore()">
+            <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+          </button>
+        </div>
+
+      </div>
     </div>
   </div>
 
-  <!-- ================= MODAL PDF ================= -->
-  <div class="modal fade" id="pdfModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal fade" id="pdfModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-
         <div class="modal-header">
-          <h5 class="modal-title">Documento generado</h5>
+          <h5 class="modal-title">Vista previa PDF</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-
-        <div class="modal-body p-0">
-          <iframe id="pdf-preview" style="width:100%; height:80vh; border:none;"></iframe>
+        <div class="modal-body" style="height:80vh;">
+          <iframe id="pdf-preview" style="width:100%; height:100%; border:0;"></iframe>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="clearFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar acción</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          ¿Desea limpiar el formulario para agregar un registro nuevo?
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-danger" onclick="confirmClearForm()">
+            Sí, limpiar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -226,10 +533,8 @@
 
   <script src="../../assets/js/vendors/pdfmake.min.js"></script>
   <script src="../../assets/js/vendors/vfs_fonts.js"></script>
-
   <script src="../../assets/js/uap/pjud-logo.js"></script>
   <script src="../../assets/js/uap/uap-form.js"></script>
-
 
 </body>
 
