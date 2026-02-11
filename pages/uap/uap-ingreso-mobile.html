@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Ingreso UAP (Móvil)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+    <!-- CSS institucional -->
+    <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+
+<body class="uap-mobile">
+
+    <main class="uap-mobile-shell">
+
+        <header class="uap-mobile-header">
+            <div>
+                <div class="uap-mobile-title">Ingreso UAP</div>
+                <div class="uap-mobile-subtitle">Uso móvil (QR)</div>
+            </div>
+            <div class="uap-mobile-badge">
+                <i class="bi bi-qr-code-scan"></i> QR
+            </div>
+        </header>
+
+        <section id="procedure-selection" class="uap-mobile-card">
+            <h5 class="uap-mobile-h5">Seleccione el tipo de trámite</h5>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary btn-lg" onclick="startProcedure('vif')">
+                    Denuncia Violencia Intrafamiliar
+                </button>
+
+                <button class="btn btn-primary btn-lg" onclick="startProtectionMeasureProcedure()">
+                    Medida de Protección
+                </button>
+            </div>
+
+            <div class="uap-mobile-help mt-3">
+                Complete el formulario y presione <b>“Generar y enviar PDF”</b>.
+                Este QR permite <b>un solo envío</b>.
+            </div>
+        </section>
+
+        <!-- FORM VIF (puedes copiar el tuyo completo si quieres; aquí dejo el mínimo base) -->
+        <form id="form-uap" class="d-none uap-mobile-card">
+            <h5 class="uap-mobile-h5">Datos del Denunciante</h5>
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label">RUN *</label>
+                    <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut"
+                        required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Nombre completo *</label>
+                    <input type="text" class="form-control" id="applicant_name" name="applicant_name" required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Domicilio *</label>
+                    <input type="text" class="form-control" name="applicant_address" required />
+                </div>
+            </div>
+
+            <hr class="uap-mobile-divider" />
+
+            <h5 class="uap-mobile-h5">Datos de la Víctima</h5>
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label">RUN *</label>
+                    <input type="text" class="form-control rut-field" id="victim_rut" name="victim_rut" required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Nombre completo *</label>
+                    <input type="text" class="form-control" id="victim_name" name="victim_name" required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Domicilio *</label>
+                    <input type="text" class="form-control" name="victim_address" required />
+                </div>
+            </div>
+
+            <hr class="uap-mobile-divider" />
+
+            <h5 class="uap-mobile-h5">Datos del Denunciado</h5>
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label">RUN *</label>
+                    <input type="text" class="form-control rut-field" id="accused_rut" name="accused_rut" required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Nombre completo *</label>
+                    <input type="text" class="form-control" id="accused_name" name="accused_name" required />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Domicilio *</label>
+                    <input type="text" class="form-control" name="accused_address" required />
+                </div>
+            </div>
+        </form>
+
+        <!-- FORM MP: si quieres lo pegamos completo después -->
+        <form id="form-mp" class="d-none uap-mobile-card">
+            <div class="uap-mobile-help">
+                Complete Medida de Protección y presione <b>“Generar y enviar PDF”</b>.
+            </div>
+        </form>
+
+    </main>
+
+    <footer class="uap-mobile-footer">
+        <button type="button" class="btn btn-outline-secondary btn-lg w-100" onclick="handleGoToStart()">
+            <i class="bi bi-arrow-left"></i> Volver al inicio
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="btn-load-test-data-mobile">
+            Cargar datos de prueba
+        </button>
+
+
+        <button id="btn-generate-mobile" type="button" class="btn btn-primary btn-lg w-100 mt-2">
+            <i class="bi bi-file-earmark-pdf"></i> Generar y enviar PDF
+        </button>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Supabase config -->
+    <script>
+        window.SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co";
+        window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhamF0emF3ZGpib2J2cGt1d2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1NjE5MDMsImV4cCI6MjA4NTEzNzkwM30.wCrSBCiaO7N3qnOWIeZ8XNwusLzLRmX56ruxP8SAmrA";
+    </script>
+
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Vendors -->
+    <script src="../../assets/js/vendors/pdfmake.min.js"></script>
+    <script src="../../assets/js/vendors/vfs_fonts.js"></script>
+
+    <!-- Tu JS existente (NO se modifica) -->
+    <script src="../../assets/js/uap/pjud-logo.js"></script>
+    <script src="../../assets/js/uap/uap-form.js"></script>
+
+    <!-- ✅ JS nuevo SOLO mobile -->
+    <script src="../../assets/js/uap/uap-form-mobile.js"></script>
+
+</body>
+
+</html>

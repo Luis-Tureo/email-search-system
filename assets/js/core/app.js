@@ -28,6 +28,10 @@ const comunaFilter = document.getElementById("comuna-filter");
 const resultsBody = document.getElementById("results-body");
 const resultsCounter = document.getElementById("results-counter");
 
+// LOGIN DOM
+const loginScreen = document.getElementById("login-screen");
+const appContent = document.getElementById("app-content");
+
 // =====================================================
 // MODAL EDICIÓN
 // =====================================================
@@ -60,14 +64,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("login-error")?.classList.add("d-none");
   });
 
-  // LOGIN DOM
-  loginScreen = document.getElementById("login-screen");
-  appContent = document.getElementById("app-content");
-
   document.getElementById("btn-login")?.addEventListener("click", doLogin);
   document.getElementById("logout-link")?.addEventListener("click", logout);
-  loadCatalogs();
-  searchInstitutions();
 
   document
     .getElementById("btn-save-institution")
@@ -77,6 +75,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logged") === "true") {
     loginScreen.classList.add("d-none");
     appContent.classList.remove("d-none");
+
+    loadCatalogs();
+    searchInstitutions();
     applyRoleUI(sessionStorage.getItem("role"));
   } else {
     loginScreen.classList.remove("d-none");
@@ -140,6 +141,12 @@ function logout() {
 // EVENTOS FILTROS
 // =====================================================
 searchIdInput.addEventListener("keyup", searchInstitutions);
+
+// Permitir solo números en ID
+searchIdInput.addEventListener("input", function () {
+  this.value = this.value.replace(/[^0-9]/g, "");
+});
+
 searchTextInput.addEventListener("keyup", searchInstitutions);
 zoneFilter.addEventListener("change", searchInstitutions);
 regionFilter.addEventListener("change", searchInstitutions);
@@ -201,22 +208,25 @@ async function searchInstitutions() {
     .order("id");
 
   if (searchIdInput.value) query = query.eq("id", searchIdInput.value);
-  
+
   if (searchTextInput.value) {
     const term = `%${searchTextInput.value}%`;
     query = query.or(
-      `institution_name.ilike.${term},observation.ilike.${term}`,
+      `institution_name.ilike.${term},observation.ilike.${term},email.ilike.${term}`,
     );
   }
 
   if (regionFilter.value) query = query.eq("region_id", regionFilter.value);
   if (comunaFilter.value) query = query.eq("comuna_id", comunaFilter.value);
+  if (zoneFilter.value) query = query.eq("zone_id", zoneFilter.value);
 
   const { data, error } = await query;
   if (error) return showCopyToast("Error al buscar");
 
   resultsCounter.textContent = `Registros encontrados: ${data.length}`;
   data.forEach(renderRow);
+
+  applyRoleUI(sessionStorage.getItem("role"));
 }
 
 // =====================================================
@@ -232,7 +242,7 @@ function getPublicFileUrl(path) {
 // =====================================================
 function renderRow(r) {
   const tr = document.createElement("tr");
-
+  const safeEmail = r.email || "";
   const pdfs = r.files?.filter((f) => f.file_name.endsWith(".pdf")) || [];
   const pdfHtml = pdfs.length
     ? `
@@ -245,13 +255,13 @@ function renderRow(r) {
   tr.innerHTML = `
     <td class="col-center">${r.id}</td>
     <td>${r.institution_name}</td>
-    <td>${r.email.replaceAll(";", "<br>")}</td>
+    <td>${safeEmail.replaceAll(";", "<br>")}</td>
     <td>${r.region?.name || "No definida"}</td>
     <td>${r.comuna?.name || "No definida"}</td>
     <td>${r.observation || ""}</td>
     <td class="col-center">${pdfHtml}</td>
     <td class="col-center">
-      <button class="btn btn-sm btn-copiar" onclick="copyEmail('${r.email.replace(/'/g, "\\'")}')">
+      <button class="btn btn-sm btn-copiar" onclick="copyEmail('${safeEmail.replace(/'/g, "\\'")}')">
         Copiar
       </button>
     </td>

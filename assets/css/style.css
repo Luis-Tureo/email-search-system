@@ -268,32 +268,35 @@ body {
     line-height: 1;
 }
 
-/* =====================================================
-   BOTÓN CERRAR SESIÓN (HEADER)
-   ===================================================== */
-
 .header-bar {
     align-items: center; /* Corrección clave */
 }
 
-/* Botón cerrar sesión institucional */
+
+/* =====================================================
+   BOTÓN CERRAR SESIÓN (HEADER)
+   ===================================================== */
+
 .btn-logout {
-    background-color: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    font-size: 13px;
-    font-weight: 500;
-    padding: 6px 14px;
-    white-space: nowrap;
+  background-color: #A3262A;
+  border: 1px solid #A3262A;
+  color: #ffffff !important;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
 }
 
 .btn-logout:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
+  background-color: #8C1F23;
+  border-color: #8C1F23;
+  color: #ffffff !important;
 }
 
-.btn-logout:focus {
-    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
+.btn-logout:focus,
+.btn-logout:active {
+  background-color: #73191C;
+  border-color: #73191C;
+  color: #ffffff !important;
+  box-shadow: none;
 }
 
 #btn-clear-filters {
@@ -307,3 +310,94 @@ body {
     color: white;
 }
 
+/* =====================================================
+   UAP MÓVIL (QR)
+   ===================================================== */
+.uap-mobile {
+  background-color: #f5f7fa;
+  padding-bottom: 120px;
+}
+
+.uap-mobile-shell {
+  padding: 12px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.uap-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #003A8F;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.uap-mobile-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.uap-mobile-subtitle {
+  font-size: 12px;
+  color: #dbe4f3;
+  margin-top: 2px;
+}
+
+.uap-mobile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.uap-mobile-card {
+  background: #ffffff;
+  border: 1px solid #e7edf6;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  margin-bottom: 12px;
+}
+
+.uap-mobile-h5 {
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #003A8F;
+}
+
+.uap-mobile-help {
+  font-size: 13px;
+  color: #334155;
+}
+
+.uap-mobile-divider {
+  margin: 14px 0;
+  opacity: 0.12;
+}
+
+.uap-mobile-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-top: 1px solid #e7edf6;
+  padding: 10px 12px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.uap-mobile-footer .btn {
+  border-radius: 12px;
+  font-size: 16px;
+  padding: 12px 14px;
+}
