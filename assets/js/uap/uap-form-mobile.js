@@ -1,36 +1,34 @@
 /***************************************************
- * UAP MOBILE (QR)
- * - Funciones nuevas solo para versión móvil
- * - No modifica uap-form.js
+ * UAP MOBILE (QR) - PRIVACIDAD
+ * - Mobile 100%: NO muestra PDF, SOLO envía por correo
+ * - NO guarda registros (sin uap_registros, sin Storage, sin supabase update)
+ * - Envía PDF como base64 a Edge Function
  ***************************************************/
 
-// Config mobile (variables en inglés)
-const MOBILE_QR_LOCK_KEY = "uap_mobile_pdf_lock";
+// Anti doble click / progreso
 const MOBILE_QR_PROGRESS_KEY = "uap_mobile_pdf_progress";
 const MOBILE_QR_SESSION_KEY = "uap_mobile_qr_session_id";
 
-// Endpoint de Edge Function (debes crearla en Supabase)
+// Trámite seleccionado (fuente de verdad mobile)
+const MOBILE_SELECTED_PROCEDURE_KEY = "uap_mobile_selected_procedure"; // 'vif' | 'mp'
+
+// Edge Function (Supabase)
 const MOBILE_MAIL_FUNCTION_NAME = "send-uap-pdf";
 
 /***************************************************
  * INIT MOBILE
  ***************************************************/
 function initMobileUapPage() {
-  // Genera/asegura sesión por QR (comentarios en español)
   ensureMobileQrSession();
-
-  // Bindea botón móvil (si existe)
-  bindMobileGenerateButton();
-
-  // Bindea botón de datos de prueba (si existe)
+  bindProcedureSelectionHooks(); // ✅ primero: enganchar selección
+  bindMobileGenerateButton(); // abre modal
   bindMobileTestDataButton();
 }
 
 /***************************************************
- * SESIÓN QR (1 envío)
+ * SESIÓN QR (opcional)
  ***************************************************/
 function ensureMobileQrSession() {
-  // Si viene ?qr=xxxx, lo usamos como sesión estable
   const params = new URLSearchParams(window.location.search);
   const qrToken = (params.get("qr") || "").trim();
 
@@ -39,7 +37,6 @@ function ensureMobileQrSession() {
     return;
   }
 
-  // Si no viene token, crea uno por sesión (suficiente para “un escaneo”)
   if (!sessionStorage.getItem(MOBILE_QR_SESSION_KEY)) {
     const generated = `qr_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     sessionStorage.setItem(MOBILE_QR_SESSION_KEY, generated);
@@ -47,57 +44,86 @@ function ensureMobileQrSession() {
 }
 
 /***************************************************
- * UI BOTÓN
+ * HOOKS: guardar trámite cuando el usuario elige VIF/MP
+ ***************************************************/
+function bindProcedureSelectionHooks() {
+  if (window.__uapMobileHooksBound) return;
+  window.__uapMobileHooksBound = true;
+
+  // startProcedure('vif')
+  if (typeof window.startProcedure === "function") {
+    const originalStartProcedure = window.startProcedure;
+    window.startProcedure = function (type) {
+      try {
+        if (type === "vif" || type === "mp") {
+          sessionStorage.setItem(MOBILE_SELECTED_PROCEDURE_KEY, type);
+          if (window.formState) window.formState.procedureType = type;
+        }
+      } catch (_) {}
+      return originalStartProcedure.apply(this, arguments);
+    };
+  }
+
+  // startProtectionMeasureProcedure() -> mp
+  if (typeof window.startProtectionMeasureProcedure === "function") {
+    const originalStartMP = window.startProtectionMeasureProcedure;
+    window.startProtectionMeasureProcedure = function () {
+      try {
+        sessionStorage.setItem(MOBILE_SELECTED_PROCEDURE_KEY, "mp");
+        if (window.formState) window.formState.procedureType = "mp";
+      } catch (_) {}
+      return originalStartMP.apply(this, arguments);
+    };
+  }
+}
+
+/***************************************************
+ * BOTÓN MOBILE: ABRE MODAL (NO ENVÍA)
  ***************************************************/
 function bindMobileGenerateButton() {
   const btn = document.getElementById("btn-generate-mobile");
   if (!btn) return;
 
-  // Si ya está bloqueado, reflejar estado
-  if (sessionStorage.getItem(MOBILE_QR_LOCK_KEY) === "1") {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-check2-circle"></i> PDF enviado';
-    return;
-  }
-
-  // Evitar listeners duplicados
   if (btn.dataset.mobileBound === "1") return;
   btn.dataset.mobileBound = "1";
 
   btn.addEventListener("click", () => {
-    void handleGenerateAndSendPdfMobile();
+    const modalEl = document.getElementById("sendConfirmModal");
+    if (!modalEl) {
+      safeToast("Falta el modal de confirmación (sendConfirmModal).");
+      return;
+    }
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
   });
 }
 
+/***************************************************
+ * BOTÓN DATOS DE PRUEBA (MOBILE)
+ * - OJO: esperamos 2 frames para que initActivitySelects convierta input->select
+ ***************************************************/
 function bindMobileTestDataButton() {
   const btn = document.getElementById("btn-load-test-data-mobile");
   if (!btn) return;
 
-  // Evitar listeners duplicados
   if (btn.dataset.testBound === "1") return;
   btn.dataset.testBound = "1";
 
   btn.addEventListener("click", () => {
-    // Si no se ha elegido trámite, mostramos VIF para pruebas
-    const form = document.getElementById("form-uap");
-    const selection = document.getElementById("procedure-selection");
+    sessionStorage.setItem(MOBILE_SELECTED_PROCEDURE_KEY, "vif");
+    if (window.formState) window.formState.procedureType = "vif";
 
-    if (selection && !selection.classList.contains("d-none")) {
-      if (typeof startProcedure === "function") startProcedure("vif");
-    } else if (form && form.classList.contains("d-none")) {
-      if (typeof startProcedure === "function") startProcedure("vif");
-    }
+    if (typeof startProcedure === "function") startProcedure("vif");
 
-    // Espera 1 frame para asegurar que el DOM quede visible y listo
     requestAnimationFrame(() => {
-      loadTestDataMobile();
-      showCopyToast("Datos de prueba cargados.");
+      requestAnimationFrame(() => {
+        loadTestDataMobile();
+        safeToast("Datos de prueba cargados.");
+      });
     });
   });
 }
 
 function loadTestDataMobile() {
-  // Helper: asigna valor y dispara eventos para que cualquier lógica del form lo tome
   function setValueById(id, value) {
     const el = document.getElementById(id);
     if (!el) return false;
@@ -116,44 +142,82 @@ function loadTestDataMobile() {
     return true;
   }
 
-  /* ================= DENUNCIANTE ================= */
-  setValueById("applicant_rut", "12.345.678-5"); // RUT válido
+  // ✅ funciona si actividad es input o select
+  function setActivity(name, value) {
+    const el = document.querySelector(`[name='${name}']`);
+    if (!el) return false;
+
+    if (el.tagName === "SELECT") {
+      const opt = Array.from(el.options).find(
+        (o) => o.value === value || o.text === value,
+      );
+      el.value = opt ? opt.value : value;
+    } else {
+      el.value = value;
+    }
+
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
+  /* DENUNCIANTE */
+  setValueById("applicant_rut", "12.345.678-5");
   setValueById("applicant_name", "Juan Carlos Pérez Soto");
-  setValueByName(
-    "applicant_address",
-    "Avenida Libertador Bernardo O’Higgins 1234, Santiago",
-  );
+  setValueByName("applicant_phone", "+56 9 1234 5678");
+  setValueByName("applicant_email", "juan.perez@correo.cl");
+  setValueByName("applicant_address", "Av. Bernardo O’Higgins 1234, Santiago");
+  setActivity("applicant_activity", "Trabajador/a dependiente");
+  setValueByName("notification_authorized_method", "Correo electrónico");
 
-  /* ================= VÍCTIMA ================= */
-  setValueById("victim_rut", "17.913.080-7"); // RUT válido
+  /* VÍCTIMA */
+  setValueById("victim_rut", "17.913.080-7");
   setValueById("victim_name", "María Fernanda González Rojas");
+  setValueByName("victim_birthdate", "2010-05-14");
+  setValueByName("victim_age", "15");
+  setValueByName("victim_phone", "+56 9 8765 4321");
+  setValueByName("victim_email", "victima@correo.cl");
   setValueByName("victim_address", "Pasaje Los Aromos 456, Santiago");
+  setActivity("victim_activity", "Estudiante");
 
-  /* ================= DENUNCIADO ================= */
-  setValueById("accused_rut", "9.876.543-3"); // RUT válido
+  /* DENUNCIADO */
+  setValueById("accused_rut", "9.876.543-3");
   setValueById("accused_name", "Carlos Alberto Ramírez Muñoz");
+  setValueByName("accused_phone", "+56 9 1111 2222");
+  setValueByName("accused_email", "denunciado@correo.cl");
   setValueByName("accused_address", "Calle Los Álamos 789, Santiago");
+  setActivity("accused_activity", "Trabajador/a independiente");
+  setValueByName("relationship", "Padre");
 }
 
 /***************************************************
- * FUNCIÓN PRINCIPAL MOBILE
+ * BOTÓN "ENVIAR AHORA" DEL MODAL
+ ***************************************************/
+function confirmSendMobilePdf() {
+  const modalEl = document.getElementById("sendConfirmModal");
+  const modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+  if (modal) modal.hide();
+
+  void handleGenerateAndSendPdfMobile();
+}
+
+/***************************************************
+ * FUNCIÓN PRINCIPAL MOBILE (SIN GUARDAR NADA)
  ***************************************************/
 async function handleGenerateAndSendPdfMobile() {
-  const btn = document.getElementById("btn-generate-mobile");
+  const fromFormState = window.formState?.procedureType;
+  const fromStorage = sessionStorage.getItem(MOBILE_SELECTED_PROCEDURE_KEY);
+  const selected = fromFormState || fromStorage;
 
-  // 1) Bloqueo definitivo si ya envió
-  //   if (sessionStorage.getItem(MOBILE_QR_LOCK_KEY) === "1") {
-  //     showCopyToast("Este QR ya generó un PDF. No se permite enviar nuevamente.");
-  //     if (btn) {
-  //       btn.disabled = true;
-  //       btn.innerHTML = '<i class="bi bi-check2-circle"></i> PDF enviado';
-  //     }
-  //     return;
-  //   }
+  if (selected !== "vif" && selected !== "mp") {
+    safeToast("Primero elija un trámite (VIF o Medida de Protección).");
+    return;
+  }
 
-  // 2) Bloqueo anti doble click
+  if (window.formState) window.formState.procedureType = selected;
+
   if (sessionStorage.getItem(MOBILE_QR_PROGRESS_KEY) === "1") {
-    showCopyToast("Generación en curso... espere por favor.");
+    safeToast("Generación en curso... espere por favor.");
     return;
   }
 
@@ -161,41 +225,20 @@ async function handleGenerateAndSendPdfMobile() {
   setMobileGenerateButtonState(true, "Generando...");
 
   try {
-    // Usa tu función existente para crear blob según trámite (VIF/MP)
     if (typeof previewPdfForCurrentProcedure !== "function") {
       throw new Error("previewPdfForCurrentProcedure no está disponible.");
     }
 
     const { blob, procedureType } = await previewPdfForCurrentProcedure();
+    const finalType = procedureType || selected;
 
-    // Guardar registro (funciones existentes)
-    const recordId = await saveMobileRecord(procedureType);
+    await sendPdfByEmailMobile({ pdfBlob: blob, procedureType: finalType });
 
-    // Subir PDF al storage (función existente)
-    const pdfPath = await uploadPdfToStorage(blob, recordId);
-
-    // Actualizar registro con ruta (usa supabaseClient existente)
-    await supabaseClient
-      .from("uap_registros")
-      .update({ pdf_path: pdfPath })
-      .eq("id", recordId);
-
-    // Enviar correo (Edge Function)
-    await sendPdfByEmailMobile({
-      pdfBlob: blob,
-      procedureType,
-      recordId,
-      pdfPath,
-    });
-
-    // Bloqueo final (1 solo envío)
-    // sessionStorage.setItem(MOBILE_QR_LOCK_KEY, "1");
-
-    showCopyToast("PDF enviado correctamente.");
-    setMobileGenerateButtonState(true, "Enviado", true);
+    safeToast("PDF enviado correctamente.");
+    setMobileGenerateButtonState(true, "PDF enviado", true);
   } catch (err) {
     console.error(err);
-    showCopyToast("No se pudo generar/enviar el PDF. Intente con un nuevo QR.");
+    safeToast("No se pudo enviar el PDF. Intente nuevamente.");
     setMobileGenerateButtonState(false, "Generar y enviar PDF");
   } finally {
     sessionStorage.removeItem(MOBILE_QR_PROGRESS_KEY);
@@ -203,36 +246,10 @@ async function handleGenerateAndSendPdfMobile() {
 }
 
 /***************************************************
- * GUARDADO MOBILE (reutiliza tus funciones existentes)
+ * ENVÍO EMAIL MOBILE (Edge Function) - base64
  ***************************************************/
-async function saveMobileRecord(procedureType) {
-  // Guarda con tus funciones existentes sin tocarlas
-  if (procedureType === "mp") {
-    if (typeof saveProtectionMeasureRecord !== "function") {
-      throw new Error("saveProtectionMeasureRecord no está disponible.");
-    }
-    showCopyToast("Guardando registro...");
-    return await saveProtectionMeasureRecord();
-  }
-
-  if (typeof saveRecord !== "function") {
-    throw new Error("saveRecord no está disponible.");
-  }
-
-  showCopyToast("Guardando registro...");
-  return await saveRecord();
-}
-
-/***************************************************
- * ENVÍO EMAIL MOBILE (Edge Function)
- ***************************************************/
-async function sendPdfByEmailMobile({
-  pdfBlob,
-  procedureType,
-  recordId,
-  pdfPath,
-}) {
-  showCopyToast("Enviando correo...");
+async function sendPdfByEmailMobile({ pdfBlob, procedureType }) {
+  safeToast("Preparando envío...");
 
   const documentLabel =
     procedureType === "mp"
@@ -241,41 +258,25 @@ async function sendPdfByEmailMobile({
 
   const subject =
     procedureType === "mp"
-      ? `UAP Móvil - Medida de Protección - Registro #${recordId}`
-      : `UAP Móvil - Denuncia VIF - Registro #${recordId}`;
+      ? "UAP Móvil - Medida de Protección"
+      : "UAP Móvil - Denuncia VIF";
 
-  const fileName = `uap_${procedureType}_${recordId}.pdf`;
-
-  // Comentarios en español:
-  // - Para evitar mandar base64 (pesado), usamos el PDF ya subido a Storage.
-  // - La Edge Function generará una URL firmada usando pdfPath.
-  // - Si por alguna razón no viene pdfPath, intentamos subirlo aquí como respaldo.
-  let finalPdfPath = pdfPath;
-
-  if (!finalPdfPath) {
-    if (typeof uploadPdfToStorage !== "function") {
-      throw new Error(
-        "uploadPdfToStorage no está disponible para subir el PDF.",
-      );
-    }
-    showCopyToast("Subiendo PDF a almacenamiento...");
-    finalPdfPath = await uploadPdfToStorage(pdfBlob, recordId);
-  }
+  const fileName = `uap_${procedureType}_${Date.now()}.pdf`;
+  const pdfBase64 = await blobToBase64Clean(pdfBlob);
 
   const payload = {
     to: "l.tureop@gmail.com",
     subject,
     documentLabel,
     fileName,
-    pdfPath: finalPdfPath, // ✅ en vez de pdfBase64
+    pdfBase64,
     qrSessionId: sessionStorage.getItem(MOBILE_QR_SESSION_KEY) || "",
   };
 
-  const url = `${SUPABASE_URL}/functions/v1/${MOBILE_MAIL_FUNCTION_NAME}`;
-
-  // Comentarios en español:
-  // - Para Edge Functions el gateway espera un JWT (anon key) en Authorization Bearer.
+  const url = `${window.SUPABASE_URL}/functions/v1/${MOBILE_MAIL_FUNCTION_NAME}`;
   const anonJwt = window.SUPABASE_ANON_KEY;
+
+  safeToast("Enviando correo...");
 
   const res = await fetch(url, {
     method: "POST",
@@ -293,11 +294,11 @@ async function sendPdfByEmailMobile({
   }
 
   const json = await res.json().catch(() => ({}));
-  if (!json?.ok) throw new Error("No se pudo enviar el correo.");
+  if (!json?.ok) throw new Error("La función de correo respondió sin ok.");
 }
 
 /***************************************************
- * HELPERS MOBILE
+ * HELPERS
  ***************************************************/
 function setMobileGenerateButtonState(disabled, label, isSuccess = false) {
   const btn = document.getElementById("btn-generate-mobile");
@@ -332,6 +333,11 @@ function blobToBase64Clean(blob) {
     };
     reader.readAsDataURL(blob);
   });
+}
+
+function safeToast(msg) {
+  if (typeof showCopyToast === "function") showCopyToast(msg);
+  else alert(msg);
 }
 
 /***************************************************
