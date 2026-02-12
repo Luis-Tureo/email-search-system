@@ -129,16 +129,15 @@ function showApp() {
   if (window.__appInitialized) return;
   window.__appInitialized = true;
 
-  // Cargar catálogos y luego buscar instituciones
-  // (comentarios en español, funciones/variables en inglés)
-  loadCatalogs()
-    .then(() => searchInstitutions())
-    .catch((err) => {
-      console.error("Error inicializando la app:", err);
-      showCopyToast("Error al cargar datos iniciales");
-    });
+  try {
+    // Ejecutar en paralelo (más rápido)
+    loadCatalogs();
+    searchInstitutions();
+  } catch (err) {
+    console.error("Error inicializando la app:", err);
+    showCopyToast("Error al cargar datos iniciales");
+  }
 }
-
 
 function logout() {
   sessionStorage.removeItem("logged");
@@ -204,7 +203,15 @@ function fillSelect(select, data) {
 // BUSCAR INSTITUCIONES
 // =====================================================
 async function searchInstitutions() {
-  resultsBody.innerHTML = "";
+  // Mostrar estado de carga
+  resultsBody.innerHTML = `
+    <tr>
+      <td colspan="9" class="text-center py-4">
+        <div class="spinner-border spinner-border-sm me-2"></div>
+        Cargando registros...
+      </td>
+    </tr>
+  `;
 
   let query = supabaseClient
     .from("institutions")
@@ -235,7 +242,16 @@ async function searchInstitutions() {
   if (zoneFilter.value) query = query.eq("zone_id", zoneFilter.value);
 
   const { data, error } = await query;
-  if (error) return showCopyToast("Error al buscar");
+
+  if (error) {
+    console.error("Error en searchInstitutions:", error);
+    resultsBody.innerHTML = "";
+    resultsCounter.textContent = "Registros encontrados: 0";
+    showCopyToast("Error al buscar");
+    return;
+  }
+
+  resultsBody.innerHTML = "";
 
   resultsCounter.textContent = `Registros encontrados: ${data.length}`;
   data.forEach(renderRow);
