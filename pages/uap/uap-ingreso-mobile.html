@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Ingreso UAP (Móvil)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -15,125 +15,472 @@
 </head>
 
 <body class="uap-mobile">
-
-    <main class="uap-mobile-shell">
+    <div class="uap-mobile-shell">
 
         <header class="uap-mobile-header">
             <div>
                 <div class="uap-mobile-title">Ingreso UAP</div>
-                <div class="uap-mobile-subtitle">Uso móvil (QR)</div>
+                <div class="uap-mobile-subtitle">Registro de Denuncias y Medidas de Protección</div>
             </div>
-            <div class="uap-mobile-badge">
-                <i class="bi bi-qr-code-scan"></i> QR
+
+            <div class="uap-mobile-badge" aria-label="Poder Judicial">
+                <img src="../../assets/img/pjud_blanco.png" alt="Poder Judicial" style="height:60px; width:auto;" />
             </div>
         </header>
 
+        <!-- Selección -->
         <section id="procedure-selection" class="uap-mobile-card">
-            <h5 class="uap-mobile-h5">Seleccione el tipo de trámite</h5>
+            <div class="alert alert-warning uap-privacy-alert mb-3" role="alert" style="margin:0;">
+                <div>
+                    <div class="uap-privacy-title">Aviso de privacidad</div>
+                    <div class="uap-privacy-text">
+                        Este sistema <strong>no almacena datos personales</strong>. La información ingresada se usa solo
+                        para generar
+                        el PDF y enviarlo por correo.
+                    </div>
+                </div>
+            </div>
+
+            <div class="uap-mobile-help mb-2 text-center">Seleccione un trámite para continuar</div>
 
             <div class="d-grid gap-2">
-                <button class="btn btn-primary btn-lg" onclick="startProcedure('vif')">
+                <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('vif')">
+                    <i class="bi bi-shield-exclamation"></i>
                     Denuncia Violencia Intrafamiliar
                 </button>
 
-                <button class="btn btn-primary btn-lg" onclick="startProtectionMeasureProcedure()">
+                <button class="btn uap-procedure-btn w-100" type="button" onclick="startProtectionMeasureProcedure()">
+                    <i class="bi bi-person-hearts"></i>
                     Medida de Protección
                 </button>
-            </div>
 
-            <div class="uap-mobile-help mt-3">
-                Complete el formulario y presione <b>“Generar y enviar PDF”</b>.
-                Este QR permite <b>un solo envío</b>.
+                <!-- Presenciales -->
+                <button class="btn uap-procedure-btn w-100" type="button"
+                    onclick="showCopyToast('Este trámite se realiza presencialmente en el tribunal.')">
+                    <i class="bi bi-file-earmark-text"></i> Solicitud que indica
+                </button>
+
+                <button class="btn uap-procedure-btn w-100" type="button"
+                    onclick="showCopyToast('Este trámite se realiza presencialmente en el tribunal.')">
+                    <i class="bi bi-person-check"></i> Compadece
+                </button>
+
+                <button class="btn uap-procedure-btn w-100" type="button"
+                    onclick="showCopyToast('Este trámite se realiza presencialmente en el tribunal.')">
+                    <i class="bi bi-pencil-square"></i> Actualización de datos personales
+                </button>
+
+                <button class="btn uap-procedure-btn w-100" type="button"
+                    onclick="showCopyToast('Este trámite se realiza presencialmente en el tribunal.')">
+                    <i class="bi bi-journal-text"></i> Otros escritos presenciales
+                </button>
             </div>
         </section>
 
-        <!-- FORM VIF (puedes copiar el tuyo completo si quieres; aquí dejo el mínimo base) -->
-        <form id="form-uap" class="d-none uap-mobile-card">
-            <h5 class="uap-mobile-h5">Datos del Denunciante</h5>
-            <div class="row g-2">
-                <div class="col-12">
-                    <label class="form-label">RUN *</label>
-                    <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut"
-                        required />
-                </div>
+        <!-- Form VIF -->
+        <form id="form-uap" class="d-none">
+            <div class="uap-mobile-card">
+                <button id="btn-load-test-data-mobile" type="button"
+                    class="btn btn-outline-secondary btn-sm w-100 mb-3">
+                    Cargar datos de prueba
+                </button>
 
-                <div class="col-12">
-                    <label class="form-label">Nombre completo *</label>
-                    <input type="text" class="form-control" id="applicant_name" name="applicant_name" required />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Domicilio *</label>
-                    <input type="text" class="form-control" name="applicant_address" required />
+                <h5 class="uap-mobile-h5">Datos del Denunciante</h5>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">RUN *</label>
+                        <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut"
+                            required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Nombre completo *</label>
+                        <input type="text" class="form-control" id="applicant_name" name="applicant_name" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" name="applicant_phone" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" class="form-control" name="applicant_email" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Forma de notificación autorizada</label>
+                        <select class="form-select" name="notification_authorized_method"
+                            id="notification_authorized_method">
+                            <option value="" selected>Seleccione una opción</option>
+                            <option value="Correo electrónico">Correo electrónico</option>
+                            <option value="Teléfono">Teléfono</option>
+                            <option value="Carta">Carta</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Otra">Otra</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Domicilio *</label>
+                        <input type="text" class="form-control" name="applicant_address" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Actividad</label>
+                        <input type="text" class="form-control" name="applicant_activity" />
+                    </div>
                 </div>
             </div>
 
-            <hr class="uap-mobile-divider" />
-
-            <h5 class="uap-mobile-h5">Datos de la Víctima</h5>
-            <div class="row g-2">
-                <div class="col-12">
-                    <label class="form-label">RUN *</label>
-                    <input type="text" class="form-control rut-field" id="victim_rut" name="victim_rut" required />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Nombre completo *</label>
-                    <input type="text" class="form-control" id="victim_name" name="victim_name" required />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Domicilio *</label>
-                    <input type="text" class="form-control" name="victim_address" required />
+            <div class="uap-mobile-card">
+                <h5 class="uap-mobile-h5">Datos de la Víctima</h5>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">RUN *</label>
+                        <input type="text" class="form-control rut-field" id="victim_rut" name="victim_rut" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Nombre completo *</label>
+                        <input type="text" class="form-control" id="victim_name" name="victim_name" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Fecha de nacimiento</label>
+                        <input type="date" class="form-control" name="victim_birthdate" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Edad</label>
+                        <input type="number" class="form-control" name="victim_age" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Etapa de vida de la víctima</label>
+                        <select class="form-select" name="victim_life_stage" id="victim_life_stage">
+                            <option value="" selected>Se selecciona automáticamente</option>
+                            <option value="Niñez">Niñez (0 a 13 años)</option>
+                            <option value="Adolescente">Adolescente (14 a 17 años)</option>
+                            <option value="Adulto">Adulto (18 a 59 años)</option>
+                            <option value="Adulto mayor">Adulto mayor (60 años o más)</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" name="victim_phone" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" class="form-control" name="victim_email" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Domicilio *</label>
+                        <input type="text" class="form-control" name="victim_address" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Actividad</label>
+                        <input type="text" class="form-control" name="victim_activity" />
+                    </div>
                 </div>
             </div>
 
-            <hr class="uap-mobile-divider" />
-
-            <h5 class="uap-mobile-h5">Datos del Denunciado</h5>
-            <div class="row g-2">
-                <div class="col-12">
-                    <label class="form-label">RUN *</label>
-                    <input type="text" class="form-control rut-field" id="accused_rut" name="accused_rut" required />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Nombre completo *</label>
-                    <input type="text" class="form-control" id="accused_name" name="accused_name" required />
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">Domicilio *</label>
-                    <input type="text" class="form-control" name="accused_address" required />
+            <div class="uap-mobile-card">
+                <h5 class="uap-mobile-h5">Datos del Denunciado</h5>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">RUN *</label>
+                        <input type="text" class="form-control rut-field" id="accused_rut" name="accused_rut"
+                            required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Nombre completo *</label>
+                        <input type="text" class="form-control" id="accused_name" name="accused_name" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" name="accused_phone" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" class="form-control" name="accused_email" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Domicilio *</label>
+                        <input type="text" class="form-control" name="accused_address" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Actividad</label>
+                        <input type="text" class="form-control" name="accused_activity" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Vínculo / parentesco</label>
+                        <select class="form-select" name="relationship" id="relationship">
+                            <option value="" selected>Seleccione parentesco</option>
+                            <option value="Padre">Padre</option>
+                            <option value="Madre">Madre</option>
+                            <option value="Hijo/a">Hijo/a</option>
+                            <option value="Cónyuge">Cónyuge</option>
+                            <option value="Conviviente">Conviviente</option>
+                            <option value="Ex pareja">Ex pareja</option>
+                            <option value="Familiar">Familiar</option>
+                            <option value="Otro">Otro</option>
+                            <option value="Desconocido">Desconocido</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </form>
 
-        <!-- FORM MP: si quieres lo pegamos completo después -->
-        <form id="form-mp" class="d-none uap-mobile-card">
-            <div class="uap-mobile-help">
-                Complete Medida de Protección y presione <b>“Generar y enviar PDF”</b>.
+        <!-- Form MP (idéntico a escritorio; lo mínimo para generar PDF) -->
+        <form id="form-mp" class="d-none">
+            <div class="uap-mobile-card">
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-3" onclick="loadTestDataMP()">
+                    Cargar datos de prueba MP
+                </button>
+
+                <h5 class="uap-mobile-h5">Datos del Niño/Niña/Adolescente (NNA)</h5>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">Nombre completo</label>
+                        <input class="form-control" name="mp_child_name" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">RUN</label>
+                        <input class="form-control" name="mp_child_rut" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Fecha de nacimiento</label>
+                        <input class="form-control" type="date" name="mp_child_birthdate" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Edad</label>
+                        <input class="form-control" name="mp_child_age" readonly />
+                        <div class="form-text">Se calcula automáticamente.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Domicilio</label>
+                        <input class="form-control" name="mp_child_address" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Teléfono</label>
+                        <input class="form-control" name="mp_child_phone" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">E-mail</label>
+                        <input class="form-control" type="email" name="mp_child_email" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Escolaridad</label>
+                        <select class="form-select" name="mp_child_schooling">
+                            <option value="">Seleccione escolaridad</option>
+                            <option>Preescolar</option>
+                            <option>Básica incompleta</option>
+                            <option>Básica completa</option>
+                            <option>Media incompleta</option>
+                            <option>Media completa</option>
+                            <option>Técnico profesional</option>
+                            <option>Superior incompleta</option>
+                            <option>Superior completa</option>
+                            <option>Otra</option>
+                            <option>No aplica / Sin información</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="uap-mobile-card">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <h5 class="uap-mobile-h5 mb-0">Requirente(s)</h5>
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                        onclick="addProtectionMeasureRequester()">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
+                </div>
+
+                <div id="mp-requesters">
+                    <div class="mp-requester border rounded-3 p-3 mb-3" data-requester-index="1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Requirente #1</strong>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-none"
+                                data-action="remove-requester">
+                                <i class="bi bi-dash-circle"></i>
+                            </button>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre completo</label>
+                                <input class="form-control" name="mp_requester_1_name" autocomplete="off" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">RUN</label>
+                                <input class="form-control" name="mp_requester_1_rut" autocomplete="off" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Actividad</label>
+                                <select class="form-select" name="mp_requester_1_activity">
+                                    <option value="">Seleccione actividad</option>
+                                    <option>Sin actividad</option>
+                                    <option>Trabajador/a dependiente</option>
+                                    <option>Trabajador/a independiente</option>
+                                    <option>Dueña/o de casa</option>
+                                    <option>Estudiante</option>
+                                    <option>Cesante</option>
+                                    <option>Jubilado/a</option>
+                                    <option>Otra</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Domicilio</label>
+                                <input class="form-control" name="mp_requester_1_address" autocomplete="off" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Teléfono</label>
+                                <input class="form-control" name="mp_requester_1_phone" autocomplete="off" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">E-mail</label>
+                                <input class="form-control" type="email" name="mp_requester_1_email"
+                                    autocomplete="off" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Vínculo / parentesco con el NNA</label>
+                                <select class="form-select" name="mp_requester_1_relationship">
+                                    <option value="">Seleccione parentesco</option>
+                                    <option>Padre</option>
+                                    <option>Madre</option>
+                                    <option>Hijo/a</option>
+                                    <option>Cónyuge</option>
+                                    <option>Conviviente</option>
+                                    <option>Ex pareja</option>
+                                    <option>Familiar</option>
+                                    <option>Otro</option>
+                                    <option>Desconocido</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="uap-mobile-divider" />
+
+                <h5 class="uap-mobile-h5">Datos del Solicitado</h5>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">Nombre completo</label>
+                        <input class="form-control" name="mp_requested_name" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">RUN</label>
+                        <input class="form-control" name="mp_requested_rut" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Actividad</label>
+                        <select class="form-select" name="mp_requested_activity">
+                            <option value="">Seleccione actividad</option>
+                            <option>Sin actividad</option>
+                            <option>Trabajador/a dependiente</option>
+                            <option>Trabajador/a independiente</option>
+                            <option>Dueña/o de casa</option>
+                            <option>Estudiante</option>
+                            <option>Cesante</option>
+                            <option>Jubilado/a</option>
+                            <option>Otra</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Domicilio</label>
+                        <input class="form-control" name="mp_requested_address" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Teléfono</label>
+                        <input class="form-control" name="mp_requested_phone" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">E-mail</label>
+                        <input class="form-control" type="email" name="mp_requested_email" autocomplete="off" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Vínculo / parentesco con el NNA</label>
+                        <select class="form-select" name="mp_requested_relationship">
+                            <option value="">Seleccione parentesco</option>
+                            <option>Padre</option>
+                            <option>Madre</option>
+                            <option>Hijo/a</option>
+                            <option>Cónyuge</option>
+                            <option>Conviviente</option>
+                            <option>Ex pareja</option>
+                            <option>Familiar</option>
+                            <option>Otro</option>
+                            <option>Desconocido</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </form>
 
-    </main>
+    </div><!-- /shell -->
 
-    <footer class="uap-mobile-footer">
-        <button type="button" class="btn btn-outline-secondary btn-lg w-100" onclick="handleGoToStart()">
-            <i class="bi bi-arrow-left"></i> Volver al inicio
-        </button>
+    <!-- Footer acciones -->
+    <div id="procedure-actions" class="uap-mobile-footer d-none">
+        <div class="d-grid gap-2">
+            <div class="d-grid gap-2" style="grid-template-columns: 1fr 1fr;">
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="handleGoToStart()">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </button>
 
-        <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="btn-load-test-data-mobile">
-            Cargar datos de prueba
-        </button>
+                <button type="button" class="btn btn-outline-danger w-100" onclick="handleOpenClearFormModal()">
+                    <i class="bi bi-eraser"></i> Limpiar
+                </button>
+            </div>
 
+            <!-- Mobile: NO preview, solo enviar -->
+            <button id="btn-generate-mobile" type="button" class="btn btn-primary btn-lg w-100 mt-2">
+                <i class="bi bi-file-earmark-pdf"></i> Generar y enviar PDF
+            </button>
+        </div>
+    </div>
 
-        <button id="btn-generate-mobile" type="button" class="btn btn-primary btn-lg w-100 mt-2">
-            <i class="bi bi-file-earmark-pdf"></i> Generar y enviar PDF
-        </button>
-    </footer>
+    <!-- Modal limpiar -->
+    <div class="modal fade" id="clearFormModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar acción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">¿Desea limpiar el formulario para agregar un registro nuevo?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmClearForm()">Sí, limpiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Bootstrap JS -->
+    <!-- Modal confirmar envío -->
+    <div class="modal fade" id="sendConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar envío</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    ¿Desea <strong>revisar los datos</strong> antes de enviar el PDF por correo?
+                    <div class="text-muted mt-2" style="font-size: 13px;">
+                        Recuerde: este sistema no guarda información. Solo genera el PDF y lo envía.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Revisar datos
+                    </button>
+
+                    <button type="button" class="btn btn-primary" onclick="confirmSendMobilePdf()">
+                        Enviar ahora
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Supabase config -->
@@ -142,21 +489,18 @@
         window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhamF0emF3ZGpib2J2cGt1d2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1NjE5MDMsImV4cCI6MjA4NTEzNzkwM30.wCrSBCiaO7N3qnOWIeZ8XNwusLzLRmX56ruxP8SAmrA";
     </script>
 
-
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <!-- Vendors -->
     <script src="../../assets/js/vendors/pdfmake.min.js"></script>
     <script src="../../assets/js/vendors/vfs_fonts.js"></script>
 
-    <!-- Tu JS existente (NO se modifica) -->
+    <!-- Logo base64 -->
     <script src="../../assets/js/uap/pjud-logo.js"></script>
+
+    <!-- Core -->
     <script src="../../assets/js/uap/uap-form.js"></script>
 
-    <!-- ✅ JS nuevo SOLO mobile -->
+    <!-- Mobile-only -->
     <script src="../../assets/js/uap/uap-form-mobile.js"></script>
-
 </body>
 
 </html>
