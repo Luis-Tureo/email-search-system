@@ -124,7 +124,21 @@ async function doLogin() {
 function showApp() {
   loginScreen.classList.add("d-none");
   appContent.classList.remove("d-none");
+
+  // Evitar ejecutar el init más de una vez si el usuario hace login varias veces
+  if (window.__appInitialized) return;
+  window.__appInitialized = true;
+
+  // Cargar catálogos y luego buscar instituciones
+  // (comentarios en español, funciones/variables en inglés)
+  loadCatalogs()
+    .then(() => searchInstitutions())
+    .catch((err) => {
+      console.error("Error inicializando la app:", err);
+      showCopyToast("Error al cargar datos iniciales");
+    });
 }
+
 
 function logout() {
   sessionStorage.removeItem("logged");
