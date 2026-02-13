@@ -146,6 +146,21 @@ function convertActivityInputToSelect(inputName) {
   input.replaceWith(select);
 }
 
+function getChildCategoryFromAge(age) {
+  const n = Number(age);
+  if (Number.isNaN(n) || n < 0) return "";
+  if (n <= 13) return "Niño/Niña";
+  if (n <= 17) return "Adolescente";
+  return "Adulto";
+}
+
+function syncMpChildCategory(idx) {
+  const ageEl = document.querySelector(`[name="mp_child_${idx}_age"]`);
+  const catEl = document.querySelector(`[name="mp_child_${idx}_category"]`);
+  if (!ageEl || !catEl) return;
+  catEl.value = getChildCategoryFromAge(ageEl.value);
+}
+
 /***************************************************
  * PDF MAKE HELPERS
  ***************************************************/
@@ -182,7 +197,201 @@ async function previewPdfForCurrentProcedure() {
   }
 
   if (procedureType === "mp") {
-    const docDefinition = buildMpDocDefinitionForPreview();
+    const data = collectMpFormData();
+
+    const nowText = new Intl.DateTimeFormat("es-CL", {
+      timeZone: "America/Santiago",
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date());
+
+    const conectaUrl = "https://conecta.pjud.cl/";
+
+    // ============================
+    // NNA(S) dinámicos (desde DOM)
+    // ============================
+    const childCards = Array.from(
+      document.querySelectorAll("#mp-children .mp-child"),
+    );
+
+    // Fallback: si no existe el contenedor, asumimos NNA #1
+    const effectiveChildCards =
+      childCards.length > 0 ? childCards : [{ getAttribute: () => "1" }];
+
+    const childrenTables = [];
+    effectiveChildCards.forEach((card, i) => {
+      const idx = (card.getAttribute("data-child-index") || "1").trim();
+
+      childrenTables.push(
+        buildPersonTable(`NNA #${i + 1}`, {
+          Nombre: data[`mp_child_${idx}_name`] || " ",
+          RUN: data[`mp_child_${idx}_rut`] || " ",
+          "Fecha nacimiento": data[`mp_child_${idx}_birthdate`] || " ",
+          Edad: data[`mp_child_${idx}_age`] || " ",
+          Domicilio: data[`mp_child_${idx}_address`] || " ",
+          Teléfono: data[`mp_child_${idx}_phone`] || " ",
+          "E-mail": data[`mp_child_${idx}_email`] || " ",
+          Escolaridad: data[`mp_child_${idx}_schooling`] || " ",
+        }),
+      );
+    });
+
+    // ============================
+    // REQUIERENTES dinámicos (DOM)
+    // ============================
+    const requesterCards = Array.from(
+      document.querySelectorAll("#mp-requesters .mp-requester"),
+    );
+    const requestersTables = [];
+
+    requesterCards.forEach((card, i) => {
+      const idx = card.getAttribute("data-requester-index") || "1";
+
+      requestersTables.push(
+        buildPersonTable(`REQUERENTE #${i + 1}`, {
+          Nombre: data[`mp_requester_${idx}_name`] || " ",
+          RUN: data[`mp_requester_${idx}_rut`] || " ",
+          Domicilio: data[`mp_requester_${idx}_address`] || " ",
+          Teléfono: data[`mp_requester_${idx}_phone`] || " ",
+          "E-mail": data[`mp_requester_${idx}_email`] || " ",
+          Actividad: data[`mp_requester_${idx}_activity`] || " ",
+          "Vínculo con NNA": data[`mp_requester_${idx}_relationship`] || " ",
+        }),
+      );
+
+      if (requesterCards.length > 1 && i === 1) {
+        requestersTables.push({ text: " ", margin: [0, 12, 0, 12] });
+      }
+    });
+
+    // ✅ AHORA docDefinition ES UN OBJETO (NO FUNCIÓN)
+    const docDefinition = {
+      pageMargins: [40, 90, 40, 95],
+      header: function () {
+        return {
+          margin: [40, 18, 40, 0],
+          columns: [
+            {
+              width: 90,
+              stack: [
+                { qr: conectaUrl, fit: 60, alignment: "left" },
+                {
+                  text: "Conecta PJUD",
+                  fontSize: 7,
+                  alignment: "left",
+                  margin: [0, 2, 0, 0],
+                },
+              ],
+            },
+            { width: "*", text: " " },
+            {
+              width: 160,
+              stack: [
+                { image: PJUD_LOGO_BASE64, width: 130, alignment: "right" },
+              ],
+            },
+          ],
+        };
+      },
+      footer: function (currentPage, pageCount) {
+        return {
+          margin: [40, 0, 40, 25],
+          columns: [
+            {
+              width: "*",
+              stack: [
+                {
+                  columns: [
+                    { text: "Pudeto 201, Ancud, Chiloé", fontSize: 9 },
+                    { text: " · Fono: (65) 262 6424 / Anexo 100", fontSize: 9 },
+                    { text: " · E-mail: jfancud@pjud.cl", fontSize: 9 },
+                  ],
+                  columnGap: 0,
+                },
+                {
+                  columns: [
+                    { text: "www.pjud.cl", fontSize: 9 },
+                    { text: ` · Fecha y hora: ${nowText}`, fontSize: 8 },
+                    ...(pageCount > 1
+                      ? [
+                          {
+                            text: ` · Página ${currentPage} de ${pageCount}`,
+                            fontSize: 8,
+                          },
+                        ]
+                      : []),
+                  ],
+                  columnGap: 0,
+                  margin: [0, 2, 0, 0],
+                },
+              ],
+            },
+          ],
+        };
+      },
+      content: [
+        {
+          text: "MEDIDA DE PROTECCIÓN",
+          alignment: "center",
+          bold: true,
+          margin: [0, 35, 0, 18],
+        },
+
+        { text: "NNA(S)", bold: true, margin: [0, 10, 0, 5] },
+        ...childrenTables,
+
+        { text: "REQUERENTE(S)", bold: true, margin: [0, 10, 0, 5] },
+        ...requestersTables,
+
+        buildPersonTable("SOLICITADO", {
+          Nombre: data.mp_requested_name || " ",
+          RUN: data.mp_requested_rut || " ",
+          Domicilio: data.mp_requested_address || " ",
+          Teléfono: data.mp_requested_phone || " ",
+          "E-mail": data.mp_requested_email || " ",
+          Actividad: data.mp_requested_activity || " ",
+          "Vínculo con NNA": data.mp_requested_relationship || " ",
+        }),
+
+        {
+          margin: [0, 45, 0, 0],
+          columns: [
+            {
+              width: "50%",
+              stack: [
+                {
+                  text: "_______________________________",
+                  alignment: "center",
+                },
+                {
+                  text: "Denunciante",
+                  bold: true,
+                  alignment: "center",
+                  margin: [0, 6, 0, 0],
+                },
+              ],
+            },
+            {
+              width: "50%",
+              stack: [
+                {
+                  text: "_______________________________",
+                  alignment: "center",
+                },
+                {
+                  text: "Funcionario/a que ingresa",
+                  bold: true,
+                  alignment: "center",
+                  margin: [0, 6, 0, 0],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      defaultStyle: { fontSize: 12 },
+    };
+
     const blob = await createPdfBlob(docDefinition);
     return { blob, procedureType };
   }
@@ -408,172 +617,6 @@ function buildVifDocDefinitionForPreview() {
   };
 }
 
-function buildMpDocDefinitionForPreview() {
-  const data = collectMpFormData();
-
-  const nowText = new Intl.DateTimeFormat("es-CL", {
-    timeZone: "America/Santiago",
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date());
-
-  const conectaUrl = "https://conecta.pjud.cl/";
-
-  const requesterCards = Array.from(
-    document.querySelectorAll("#mp-requesters .mp-requester"),
-  );
-  const requestersTables = [];
-
-  requesterCards.forEach((card, i) => {
-    const idx = card.getAttribute("data-requester-index");
-
-    requestersTables.push(
-      buildPersonTable(`REQUERENTE #${i + 1}`, {
-        Nombre: data[`mp_requester_${idx}_name`] || " ",
-        RUN: data[`mp_requester_${idx}_rut`] || " ",
-        Domicilio: data[`mp_requester_${idx}_address`] || " ",
-        Teléfono: data[`mp_requester_${idx}_phone`] || " ",
-        "E-mail": data[`mp_requester_${idx}_email`] || " ",
-        Actividad: data[`mp_requester_${idx}_activity`] || " ",
-        "Vínculo con NNA": data[`mp_requester_${idx}_relationship`] || " ",
-      }),
-    );
-
-    if (requesterCards.length > 1 && i === 1) {
-      requestersTables.push({ text: " ", margin: [0, 12, 0, 12] });
-    }
-  });
-
-  return {
-    pageMargins: [40, 90, 40, 95],
-    header: function () {
-      return {
-        margin: [40, 18, 40, 0],
-        columns: [
-          {
-            width: 90,
-            stack: [
-              { qr: conectaUrl, fit: 60, alignment: "left" },
-              {
-                text: "Conecta PJUD",
-                fontSize: 7,
-                alignment: "left",
-                margin: [0, 2, 0, 0],
-              },
-            ],
-          },
-          { width: "*", text: " " },
-          {
-            width: 160,
-            stack: [
-              { image: PJUD_LOGO_BASE64, width: 130, alignment: "right" },
-            ],
-          },
-        ],
-      };
-    },
-    footer: function (currentPage, pageCount) {
-      return {
-        margin: [40, 0, 40, 25],
-        columns: [
-          {
-            width: "*",
-            stack: [
-              {
-                columns: [
-                  { text: "Pudeto 201, Ancud, Chiloé", fontSize: 9 },
-                  { text: " · Fono: (65) 262 6424 / Anexo 100", fontSize: 9 },
-                  { text: " · E-mail: jfancud@pjud.cl", fontSize: 9 },
-                ],
-                columnGap: 0,
-              },
-              {
-                columns: [
-                  { text: "www.pjud.cl", fontSize: 9 },
-                  { text: ` · Fecha y hora: ${nowText}`, fontSize: 8 },
-                  ...(pageCount > 1
-                    ? [
-                        {
-                          text: ` · Página ${currentPage} de ${pageCount}`,
-                          fontSize: 8,
-                        },
-                      ]
-                    : []),
-                ],
-                columnGap: 0,
-                margin: [0, 2, 0, 0],
-              },
-            ],
-          },
-        ],
-      };
-    },
-    content: [
-      {
-        text: "MEDIDA DE PROTECCIÓN",
-        alignment: "center",
-        bold: true,
-        margin: [0, 35, 0, 18],
-      },
-
-      buildPersonTable("NNA", {
-        Nombre: data.mp_child_name || " ",
-        RUN: data.mp_child_rut || " ",
-        "Fecha nacimiento": data.mp_child_birthdate || " ",
-        Edad: data.mp_child_age || " ",
-        Domicilio: data.mp_child_address || " ",
-        Teléfono: data.mp_child_phone || " ",
-        "E-mail": data.mp_child_email || " ",
-        Escolaridad: data.mp_child_schooling || " ",
-      }),
-
-      { text: "REQUERENTE(S)", bold: true, margin: [0, 10, 0, 5] },
-      ...requestersTables,
-
-      buildPersonTable("SOLICITADO", {
-        Nombre: data.mp_requested_name || " ",
-        RUN: data.mp_requested_rut || " ",
-        Domicilio: data.mp_requested_address || " ",
-        Teléfono: data.mp_requested_phone || " ",
-        "E-mail": data.mp_requested_email || " ",
-        Actividad: data.mp_requested_activity || " ",
-        "Vínculo con NNA": data.mp_requested_relationship || " ",
-      }),
-
-      {
-        margin: [0, 45, 0, 0],
-        columns: [
-          {
-            width: "50%",
-            stack: [
-              { text: "_______________________________", alignment: "center" },
-              {
-                text: "Denunciante",
-                bold: true,
-                alignment: "center",
-                margin: [0, 6, 0, 0],
-              },
-            ],
-          },
-          {
-            width: "50%",
-            stack: [
-              { text: "_______________________________", alignment: "center" },
-              {
-                text: "Funcionario/a que ingresa",
-                bold: true,
-                alignment: "center",
-                margin: [0, 6, 0, 0],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    defaultStyle: { fontSize: 12 },
-  };
-}
-
 /***************************************************
  * EDAD / ETAPA DE VIDA (VIF)
  ***************************************************/
@@ -685,6 +728,137 @@ function initVictimLifeStageAutoSelect() {
   syncLifeStage();
 }
 
+function addProtectionMeasureChild() {
+  const container = document.getElementById("mp-children");
+  if (!container) {
+    showCopyToast("No se encontró el contenedor de NNA.");
+    return;
+  }
+
+  mpChildCount += 1;
+
+  const index = mpChildCount;
+
+  const card = document.createElement("div");
+  card.className = "mp-child border rounded-3 p-3 mb-3";
+  card.setAttribute("data-child-index", String(index));
+
+  // Comentarios en español; variables/funciones en inglés
+  card.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>NNA #${index}</strong>
+      <button type="button" class="btn btn-outline-danger btn-sm" data-action="remove-child">
+        <i class="bi bi-dash-circle"></i> Quitar
+      </button>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-12 col-md-8">
+        <label class="form-label">Nombre completo</label>
+        <input class="form-control" name="mp_child_${index}_name" autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">RUN</label>
+        <input class="form-control" name="mp_child_${index}_rut" autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Fecha de nacimiento</label>
+        <input class="form-control" type="date" name="mp_child_${index}_birthdate" />
+      </div>
+
+      <div class="col-12 col-md-2">
+        <label class="form-label">Edad</label>
+        <input class="form-control" name="mp_child_${index}_age" readonly />
+      </div>
+
+<div class="col-12 col-md-4">
+  <label class="form-label">Categoría (auto)</label>
+  <input class="form-control" name="mp_child_${index}_category" readonly />
+</div>
+
+
+      <div class="col-12">
+        <label class="form-label">Domicilio</label>
+        <input class="form-control" name="mp_child_${index}_address" autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" name="mp_child_${index}_phone" autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">E-mail</label>
+        <input class="form-control" type="email" name="mp_child_${index}_email" autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Escolaridad</label>
+        <select class="form-select" name="mp_child_${index}_schooling">
+          <option value="">Seleccione escolaridad</option>
+          <option>Preescolar</option>
+          <option>Básica incompleta</option>
+          <option>Básica completa</option>
+          <option>Media incompleta</option>
+          <option>Media completa</option>
+          <option>Técnico profesional</option>
+          <option>Superior incompleta</option>
+          <option>Superior completa</option>
+          <option>Otra</option>
+          <option>No aplica / Sin información</option>
+        </select>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(card);
+
+  // Enlazar fecha->edad del nuevo NNA
+  bindBirthdateToAge(
+    "form-mp",
+    `mp_child_${index}_birthdate`,
+    `mp_child_${index}_age`,
+  );
+
+  syncMpChildCategory(index);
+  renumberProtectionChildren();
+  showCopyToast("NNA agregado");
+}
+
+function renumberProtectionChildren() {
+  const cards = Array.from(document.querySelectorAll("#mp-children .mp-child"));
+  cards.forEach((card, i) => {
+    const title = card.querySelector("strong");
+    if (title) title.textContent = `NNA #${i + 1}`;
+
+    const removeBtn = card.querySelector('button[data-action="remove-child"]');
+    if (removeBtn) {
+      if (i === 0) removeBtn.classList.add("d-none");
+      else removeBtn.classList.remove("d-none");
+    }
+  });
+}
+
+function updateMpChildCountFromDom() {
+  const cards = Array.from(document.querySelectorAll("#mp-children .mp-child"));
+  if (cards.length === 0) {
+    mpChildCount = 1;
+    return;
+  }
+
+  mpChildCount = cards.reduce((max, card) => {
+    const idx = Number(card.getAttribute("data-child-index") || "1");
+    return Number.isNaN(idx) ? max : Math.max(max, idx);
+  }, 1);
+}
+
+/***************************************************
+ * MP: NNA (dinámico)
+ ***************************************************/
+let mpChildCount = 1;
+
 /***************************************************
  * MP: REQUIRENTES (dinámico)
  ***************************************************/
@@ -704,10 +878,17 @@ function bindBirthdateToAge(formId, birthdateName, ageName) {
 
   const syncAge = () => {
     ageEl.value = calculateAgeFromBirthdate(birthdateEl.value);
+
+    // si es mp_child_X, actualiza categoría
+    const m = birthdateName.match(/^mp_child_(\d+)_birthdate$/);
+    if (m) syncMpChildCategory(m[1]);
   };
 
   birthdateEl.addEventListener("input", syncAge);
   birthdateEl.addEventListener("change", syncAge);
+
+  // Inicial (por si ya hay fecha cargada)
+  syncAge();
 }
 
 function initProtectionMeasureForm() {
@@ -717,8 +898,56 @@ function initProtectionMeasureForm() {
   if (form.dataset.initialized === "1") return;
   form.dataset.initialized = "1";
 
-  bindBirthdateToAge("form-mp", "mp_child_birthdate", "mp_child_age");
+  // ============================
+  // NNA: eliminar y reindexar
+  // ============================
+  const childrenContainer = document.getElementById("mp-children");
+  if (childrenContainer) {
+    childrenContainer.addEventListener("click", (e) => {
+      const btn = e.target.closest('button[data-action="remove-child"]');
+      if (!btn) return;
 
+      const card = btn.closest(".mp-child");
+      if (!card) return;
+
+      card.remove();
+      showCopyToast("NNA eliminado");
+      renumberProtectionChildren();
+      updateMpChildCountFromDom();
+
+      // Recalcular categoría de los que quedan
+      Array.from(document.querySelectorAll("#mp-children .mp-child")).forEach(
+        (c) => {
+          const idx = (c.getAttribute("data-child-index") || "1").trim();
+          syncMpChildCategory(idx);
+        },
+      );
+    });
+  }
+
+  // Asegurar títulos/botones y contadores
+  renumberProtectionChildren();
+  updateMpChildCountFromDom();
+
+  // Enlazar fecha->edad para el/los NNA existentes + categoría inicial
+  Array.from(document.querySelectorAll("#mp-children .mp-child")).forEach(
+    (card) => {
+      const idx = (card.getAttribute("data-child-index") || "1").trim();
+
+      bindBirthdateToAge(
+        "form-mp",
+        `mp_child_${idx}_birthdate`,
+        `mp_child_${idx}_age`,
+      );
+
+      // Seteo inicial de categoría (por si ya viene edad cargada)
+      syncMpChildCategory(idx);
+    },
+  );
+
+  // ============================
+  // REQUIERENTES: eliminar y reindexar
+  // ============================
   const container = document.getElementById("mp-requesters");
   if (container) {
     container.addEventListener("click", (e) => {
@@ -736,6 +965,7 @@ function initProtectionMeasureForm() {
   }
 
   renumberProtectionRequesters();
+  updateMpRequesterCountFromDom();
 }
 
 function addProtectionMeasureRequester() {
@@ -860,13 +1090,17 @@ function clearProtectionMeasureForm() {
   const form = document.getElementById("form-mp");
   if (!form) return;
 
+  // Limpiar todo
   form
     .querySelectorAll("input, select, textarea")
     .forEach((el) => (el.value = ""));
 
-  const container = document.getElementById("mp-requesters");
-  if (container) {
-    const cards = Array.from(container.querySelectorAll(".mp-requester"));
+  // Requirentes: dejar solo el primero
+  const requesterContainer = document.getElementById("mp-requesters");
+  if (requesterContainer) {
+    const cards = Array.from(
+      requesterContainer.querySelectorAll(".mp-requester"),
+    );
     cards.forEach((card, i) => {
       if (i === 0) {
         card
@@ -877,9 +1111,27 @@ function clearProtectionMeasureForm() {
       }
     });
   }
-
   mpRequesterCount = 1;
   renumberProtectionRequesters();
+
+  // NNA: dejar solo el primero
+  const childContainer = document.getElementById("mp-children");
+  if (childContainer) {
+    const cards = Array.from(childContainer.querySelectorAll(".mp-child"));
+    cards.forEach((card, i) => {
+      if (i === 0) {
+        card
+          .querySelectorAll("input, select, textarea")
+          .forEach((el) => (el.value = ""));
+      } else {
+        card.remove();
+      }
+    });
+  }
+  mpChildCount = 1;
+  renumberProtectionChildren();
+
+  showCopyToast("Formulario MP limpiado.");
 }
 
 /***************************************************
@@ -928,17 +1180,38 @@ function loadTestDataMP() {
   if (typeof window.startProtectionMeasureProcedure === "function")
     window.startProtectionMeasureProcedure();
 
-  document.querySelector("[name='mp_child_name']").value =
+  // NNA #1
+  document.querySelector("[name='mp_child_1_name']").value =
     "Benjamín Ignacio Soto López";
-  document.querySelector("[name='mp_child_rut']").value = "21.345.678-9";
-  document.querySelector("[name='mp_child_birthdate']").value = "2014-09-22";
-  document.querySelector("[name='mp_child_age']").value = "10";
-  document.querySelector("[name='mp_child_address']").value =
+  document.querySelector("[name='mp_child_1_rut']").value = "21.345.678-9";
+  document.querySelector("[name='mp_child_1_birthdate']").value = "2014-09-22";
+  document.querySelector("[name='mp_child_1_age']").value = "10";
+  document.querySelector("[name='mp_child_1_address']").value =
     "Pasaje Los Robles 321, Ancud";
-  document.querySelector("[name='mp_child_phone']").value = "+56 9 5555 6666";
-  document.querySelector("[name='mp_child_email']").value = "nna@correo.cl";
-  document.querySelector("[name='mp_child_schooling']").value =
+  document.querySelector("[name='mp_child_1_phone']").value = "+56 9 5555 6666";
+  document.querySelector("[name='mp_child_1_email']").value = "nna@correo.cl";
+  document.querySelector("[name='mp_child_1_schooling']").value =
     "Básica completa";
+
+  // (Opcional) NNA #2 de prueba
+  if (typeof window.addProtectionMeasureChild === "function") {
+    window.addProtectionMeasureChild();
+
+    document.querySelector("[name='mp_child_2_name']").value =
+      "Sofía Antonia Soto López";
+    document.querySelector("[name='mp_child_2_rut']").value = "22.111.222-3";
+    document.querySelector("[name='mp_child_2_birthdate']").value =
+      "2017-03-10";
+    document.querySelector("[name='mp_child_2_age']").value = "8";
+    document.querySelector("[name='mp_child_2_address']").value =
+      "Pasaje Los Robles 321, Ancud";
+    document.querySelector("[name='mp_child_2_phone']").value =
+      "+56 9 4444 5555";
+    document.querySelector("[name='mp_child_2_email']").value =
+      "nna2@correo.cl";
+    document.querySelector("[name='mp_child_2_schooling']").value =
+      "Básica incompleta";
+  }
 
   // Requirente #1
   document.querySelector("[name='mp_requester_1_name']").value =

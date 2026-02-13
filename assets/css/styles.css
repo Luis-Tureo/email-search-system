@@ -236,3 +236,154 @@ body {
   display: block;
 }
 
+
+/* =====================================================
+   UAP CONFIG CORREO (misma línea gráfica PJUD)
+   - Agregar al final de styles.css
+   ===================================================== */
+
+:root {
+  --pjud-blue: #113F67;
+  --pjud-navy: #0b1f33;
+  --pjud-border: #d9e2ea;
+  --pjud-muted: #5b6773;
+}
+
+body {
+  background: #f5f7fb;
+  color: var(--pjud-navy);
+}
+
+/* Contenedor centrado y ancho controlado (similar a Ingreso UAP) */
+.uap-config-page {
+  min-height: 100vh;
+  padding: 26px 14px 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.uap-config-wrap {
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Banner superior estilo UAP */
+.uap-config-header {
+  background: var(--pjud-blue);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.uap-config-title {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.uap-config-subtitle {
+  font-size: 13px;
+  opacity: 0.88;
+  margin-top: 2px;
+}
+
+/* Caja de contenido */
+.uap-config-card {
+  background: #ffffff;
+  border: 1px solid var(--pjud-border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 8px rgba(11, 31, 51, 0.06);
+}
+
+.uap-config-text {
+  font-size: 13px;
+  color: var(--pjud-muted);
+  margin-bottom: 12px;
+}
+
+/* Inputs estilo PJUD */
+.form-control,
+.form-select {
+  border-radius: 12px;
+  border-color: var(--pjud-border);
+}
+
+/* Botón principal PJUD (hover blanco con texto azul) */
+.btn-primary {
+  background: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+}
+
+/* Botón secundario sobrio */
+.btn-secondary {
+  border-radius: 12px;
+}
+
+/* Botón salir (si lo usas en esta página) */
+.uap-config-logout {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.uap-config-logout:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: #ffffff;
+}
+
+/* Toast global (mismo que tu estándar) */
+.toast-copiar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  background: rgba(11, 31, 51, 0.92);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+}
+
+.toast-copiar.show {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .uap-config-header {
+    padding: 14px 14px;
+  }
+
+  .uap-config-title {
+    font-size: 18px;
+  }
+
+  .uap-config-wrap {
+    max-width: 520px;
+  }
+}

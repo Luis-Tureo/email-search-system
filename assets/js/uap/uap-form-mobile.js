@@ -15,6 +15,31 @@ const MOBILE_SELECTED_PROCEDURE_KEY = "uap_mobile_selected_procedure"; // 'vif' 
 // Edge Function (Supabase)
 const MOBILE_MAIL_FUNCTION_NAME = "send-uap-pdf";
 
+// =====================================================
+// NOTIFICACIÓN: CORREO DESTINO (configurable)
+// - Comentarios en español
+// - Variables/funciones en inglés
+// =====================================================
+function getMobileNotifyEmail() {
+  // Lee desde localStorage el correo configurado por la nueva página
+  const STORAGE_KEY = "uap_mobile_notify_email";
+
+  // Correo por defecto (tu valor actual)
+  const DEFAULT_EMAIL = "L.tureop@gmail.com";
+
+  try {
+    const saved = (localStorage.getItem(STORAGE_KEY) || "").trim();
+
+    // Validación simple de formato email
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(saved);
+
+    return isValidEmail ? saved : DEFAULT_EMAIL;
+  } catch (e) {
+    // Si el navegador bloquea localStorage o falla algo, vuelve al default
+    return DEFAULT_EMAIL;
+  }
+}
+
 /***************************************************
  * INIT MOBILE
  ***************************************************/
@@ -23,6 +48,10 @@ function initMobileUapPage() {
   bindProcedureSelectionHooks(); // ✅ primero: enganchar selección
   bindMobileGenerateButton(); // abre modal
   bindMobileTestDataButton();
+
+  // ✅ NUEVO
+  bindMpChildCategoryAutoMobile();
+  patchAddChildForCategoryMobile();
 }
 
 /***************************************************
@@ -248,6 +277,9 @@ async function handleGenerateAndSendPdfMobile() {
 /***************************************************
  * ENVÍO EMAIL MOBILE (Edge Function) - base64
  ***************************************************/
+/***************************************************
+ * ENVÍO EMAIL MOBILE (Edge Function) - base64
+ ***************************************************/
 async function sendPdfByEmailMobile({ pdfBlob, procedureType }) {
   safeToast("Preparando envío...");
 
@@ -265,7 +297,7 @@ async function sendPdfByEmailMobile({ pdfBlob, procedureType }) {
   const pdfBase64 = await blobToBase64Clean(pdfBlob);
 
   const payload = {
-    to: "l.tureop@gmail.com",
+    to: "l.tureop@gmail.com", 
     subject,
     documentLabel,
     fileName,
@@ -336,8 +368,14 @@ function blobToBase64Clean(blob) {
 }
 
 function safeToast(msg) {
-  if (typeof showCopyToast === "function") showCopyToast(msg);
-  else alert(msg);
+  // Siempre toast: sin alert nativo
+  if (typeof showCopyToast === "function") {
+    showCopyToast(msg);
+    return;
+  }
+
+  // Fallback silencioso (no interrumpe al usuario)
+  console.log("[TOAST]", msg);
 }
 
 /***************************************************
@@ -346,3 +384,88 @@ function safeToast(msg) {
 document.addEventListener("DOMContentLoaded", () => {
   initMobileUapPage();
 });
+
+/***************************************************
+ * MP (MOBILE): Categoría auto (Niño/Niña vs Adolescente)
+ * - Basado SOLO en edad
+ * - Se actualiza cuando cambia birthdate o age
+ ***************************************************/
+function getChildCategoryFromAge(age) {
+  const n = Number(age);
+  if (Number.isNaN(n) || n < 0) return "";
+  if (n <= 13) return "Niño/Niña";
+  if (n <= 17) return "Adolescente";
+  return "Adulto";
+}
+
+function syncMpChildCategoryByIndex(idx) {
+  const ageEl = document.querySelector(`[name="mp_child_${idx}_age"]`);
+  const catEl = document.querySelector(`[name="mp_child_${idx}_category"]`);
+  if (!ageEl || !catEl) return;
+  catEl.value = getChildCategoryFromAge(ageEl.value);
+}
+
+/**
+ * Delegación: escucha cambios en todo el form-mp
+ * y detecta mp_child_X_age / mp_child_X_birthdate para actualizar categoría.
+ */
+function bindMpChildCategoryAutoMobile() {
+  const formMp = document.getElementById("form-mp");
+  if (!formMp) return;
+
+  if (formMp.dataset.mpCategoryBound === "1") return;
+  formMp.dataset.mpCategoryBound = "1";
+
+  const handler = (e) => {
+    const el = e.target;
+    if (!el || !el.name) return;
+
+    // mp_child_2_age o mp_child_2_birthdate
+    const m = el.name.match(/^mp_child_(\d+)_(age|birthdate)$/);
+    if (!m) return;
+
+    const idx = m[1];
+    // si cambió birthdate, normalmente tu uap-form.js recalcula age;
+    // igual forzamos sync por si age ya quedó seteada.
+    requestAnimationFrame(() => syncMpChildCategoryByIndex(idx));
+  };
+
+  formMp.addEventListener("input", handler);
+  formMp.addEventListener("change", handler);
+
+  // Inicial: si ya hay NNA cargados, actualiza categorías
+  Array.from(document.querySelectorAll("#mp-children .mp-child")).forEach(
+    (card) => {
+      const idx = card.getAttribute("data-child-index") || "1";
+      syncMpChildCategoryByIndex(idx);
+    },
+  );
+}
+
+/**
+ * Opcional: parchea addProtectionMeasureChild() para que
+ * al crear un nuevo NNA, deje lista su categoría altiro.
+ */
+function patchAddChildForCategoryMobile() {
+  if (typeof window.addProtectionMeasureChild !== "function") return;
+  if (window.__mpAddChildPatchedForCategory === true) return;
+  window.__mpAddChildPatchedForCategory = true;
+
+  const original = window.addProtectionMeasureChild;
+  window.addProtectionMeasureChild = function () {
+    const before = document.querySelectorAll("#mp-children .mp-child").length;
+
+    const result = original.apply(this, arguments);
+
+    // busca el último NNA agregado
+    const cards = document.querySelectorAll("#mp-children .mp-child");
+    if (cards.length > before) {
+      const last = cards[cards.length - 1];
+      const idx = last.getAttribute("data-child-index") || String(cards.length);
+      // setea categoría (si ya hay edad), y si no, quedará vacía hasta que setees fecha/edad
+      syncMpChildCategoryByIndex(idx);
+    }
+
+    return result;
+  };
+}
