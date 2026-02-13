@@ -32,11 +32,14 @@
         <section id="procedure-selection" class="uap-mobile-card">
             <div class="alert alert-warning uap-privacy-alert mb-3" role="alert" style="margin:0;">
                 <div>
-                    <div class="uap-privacy-title">Aviso de privacidad</div>
+                    <div class="uap-privacy-title text-center">Aviso de privacidad</div>
                     <div class="uap-privacy-text">
-                        Este sistema <strong>no almacena datos personales</strong>. La información ingresada se usa solo
-                        para generar
-                        el PDF y enviarlo por correo.
+                        Esta aplicación <strong>no guarda ni almacena datos personales</strong>; la información
+                        ingresada se utiliza exclusivamente para generar el archivo PDF y enviarlo al correo
+                        institucional de <strong>Atención al Cliente del Juzgado de Familia de Ancud</strong> para su
+                        impresión,
+                        realizándose dicho tratamiento conforme a la <strong>Ley N° 21.719</strong> sobre Protección de
+                        Datos Personales.
                     </div>
                 </div>
             </div>
@@ -229,54 +232,89 @@
                     Cargar datos de prueba MP
                 </button>
 
-                <h5 class="uap-mobile-h5">Datos del Niño/Niña/Adolescente (NNA)</h5>
-                <div class="row g-2">
-                    <div class="col-12">
-                        <label class="form-label">Nombre completo</label>
-                        <input class="form-control" name="mp_child_name" autocomplete="off" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">RUN</label>
-                        <input class="form-control" name="mp_child_rut" autocomplete="off" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Fecha de nacimiento</label>
-                        <input class="form-control" type="date" name="mp_child_birthdate" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Edad</label>
-                        <input class="form-control" name="mp_child_age" readonly />
-                        <div class="form-text">Se calcula automáticamente.</div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Domicilio</label>
-                        <input class="form-control" name="mp_child_address" autocomplete="off" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Teléfono</label>
-                        <input class="form-control" name="mp_child_phone" autocomplete="off" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">E-mail</label>
-                        <input class="form-control" type="email" name="mp_child_email" autocomplete="off" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Escolaridad</label>
-                        <select class="form-select" name="mp_child_schooling">
-                            <option value="">Seleccione escolaridad</option>
-                            <option>Preescolar</option>
-                            <option>Básica incompleta</option>
-                            <option>Básica completa</option>
-                            <option>Media incompleta</option>
-                            <option>Media completa</option>
-                            <option>Técnico profesional</option>
-                            <option>Superior incompleta</option>
-                            <option>Superior completa</option>
-                            <option>Otra</option>
-                            <option>No aplica / Sin información</option>
-                        </select>
+                <!-- ✅ NNA REPETIBLE (MOBILE) -->
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <h5 class="uap-mobile-h5 mb-0">Datos del Niño/Niña/Adolescente (NNA)</h5>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addProtectionMeasureChild()">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
+                </div>
+
+                <div id="mp-children">
+                    <div class="mp-child border rounded-3 p-3 mb-3" data-child-index="1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>NNA #1</strong>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-none"
+                                data-action="remove-child">
+                                <i class="bi bi-dash-circle"></i> Quitar
+                            </button>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre completo</label>
+                                <input class="form-control" name="mp_child_1_name" autocomplete="off" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">RUN</label>
+                                <input class="form-control rut-field" name="mp_child_1_rut" autocomplete="off" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Fecha de nacimiento</label>
+                                <input class="form-control" type="date" name="mp_child_1_birthdate" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Edad</label>
+                                <input class="form-control" name="mp_child_1_age" readonly />
+                                <div class="form-text">Se calcula automáticamente.</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Categoría (auto)</label>
+                                <input class="form-control" name="mp_child_1_category" readonly />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Domicilio</label>
+                                <input class="form-control" name="mp_child_1_address" autocomplete="off" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Teléfono</label>
+                                <input class="form-control" name="mp_child_1_phone" autocomplete="off" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">E-mail</label>
+                                <input class="form-control" type="email" name="mp_child_1_email" autocomplete="off" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Escolaridad</label>
+                                <select class="form-select" name="mp_child_1_schooling">
+                                    <option value="">Seleccione escolaridad</option>
+                                    <option>Preescolar</option>
+                                    <option>Básica incompleta</option>
+                                    <option>Básica completa</option>
+                                    <option>Media incompleta</option>
+                                    <option>Media completa</option>
+                                    <option>Técnico profesional</option>
+                                    <option>Superior incompleta</option>
+                                    <option>Superior completa</option>
+                                    <option>Otra</option>
+                                    <option>No aplica / Sin información</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <!-- /NNA REPETIBLE (MOBILE) -->
+
+
+
             </div>
 
             <div class="uap-mobile-card">
