@@ -1,0 +1,50 @@
+/* =====================================================
+   VISTA: INGRESO DE INSTITUCIONES
+   - Mantiene estética institucional PJUD
+   ===================================================== */
+
+.login-card {
+  width: 350px;
+}
+
+.entry-card {
+  border-radius: 8px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #5b6773;
+  margin-top: 4px;
+}
+
+.btn-back-home {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.alert-permission {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid #f1c6c6;
+  background: #fff5f5;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.alert-permission i {
+  font-size: 20px;
+  color: #b02a37;
+  margin-top: 2px;
+}
+
+.alert-permission-title {
+  font-weight: 700;
+  color: #0b1f33;
+  line-height: 1.1;
+}
+
+.alert-permission-text {
+  color: #5b6773;
+  font-size: 13px;
+}

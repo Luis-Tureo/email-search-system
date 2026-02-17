@@ -51,6 +51,7 @@ const editNewFileInput = document.getElementById("edit-new-file");
 // INIT
 // =====================================================
 document.addEventListener("DOMContentLoaded", () => {
+  enforceSearchAuth();
   const passInput = document.getElementById("login-password");
 
   passInput?.addEventListener("keydown", (e) => {
@@ -73,15 +74,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ESTADO LOGIN
   if (sessionStorage.getItem("logged") === "true") {
-    loginScreen.classList.add("d-none");
-    appContent.classList.remove("d-none");
-
     loadCatalogs();
     searchInstitutions();
     applyRoleUI(sessionStorage.getItem("role"));
-  } else {
-    loginScreen.classList.remove("d-none");
-    appContent.classList.add("d-none");
   }
 });
 
@@ -140,14 +135,28 @@ function showApp() {
 }
 
 function logout() {
+  // elimina sesión
   sessionStorage.removeItem("logged");
   sessionStorage.removeItem("role");
 
-  document.getElementById("login-password").value = "";
-  document.getElementById("login-error")?.classList.add("d-none");
+  //intenta limpiar campos si existen (por si se reutiliza en index)
+  const passInput = document.getElementById("login-password");
+  if (passInput) passInput.value = "";
 
-  loginScreen.classList.remove("d-none");
-  appContent.classList.add("d-none");
+  const loginError = document.getElementById("login-error");
+  if (loginError) loginError.classList.add("d-none");
+
+  window.location.href = "/index.html";
+}
+
+
+function enforceSearchAuth() {
+  // Comentario en español:
+  // Si no hay sesión, esta pantalla no se puede ver (redirige al login)
+  const isLogged = sessionStorage.getItem("logged") === "true";
+  if (!isLogged) {
+    window.location.href = "/index.html";
+  }
 }
 
 // =====================================================
@@ -764,7 +773,23 @@ function copyEmail(email) {
 // =====================================================
 function applyRoleUI(role) {
   const isAdmin = role === "admin";
+
+  // Comentario en español:
+  // Oculta/mostrar columna Editar según rol
   document.querySelectorAll(".col-edit").forEach((el) => {
     el.style.display = isAdmin ? "" : "none";
   });
+
+  // Comentario en español:
+  // Mostrar botón "Ingresar institución" solo para admin
+  const goEntryBtn = document.getElementById("btn-go-insert-institution");
+  if (goEntryBtn) {
+    goEntryBtn.classList.toggle("d-none", !isAdmin);
+
+    // Comentario en español:
+    // Redirección al HTML de ingreso de instituciones (ruta estable)
+    goEntryBtn.onclick = () => {
+      window.location.href = "/pages/institution-system/insert-institution.html";
+    };
+  }
 }
