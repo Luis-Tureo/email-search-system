@@ -25,6 +25,7 @@ const searchTextInput = document.getElementById("search-text");
 const zoneFilter = document.getElementById("zone-filter");
 const regionFilter = document.getElementById("region-filter");
 const comunaFilter = document.getElementById("comuna-filter");
+const groupFilter = document.getElementById("group-filter");
 const resultsBody = document.getElementById("results-body");
 const resultsCounter = document.getElementById("results-counter");
 
@@ -46,6 +47,9 @@ const editComuna = document.getElementById("edit-comuna");
 const editObservation = document.getElementById("edit-observation");
 const editFilesList = document.getElementById("edit-files-list");
 const editNewFileInput = document.getElementById("edit-new-file");
+const editGroup = document.getElementById("edit-group");
+const editSubmissionMethod = document.getElementById("edit-submission-method");
+const editValidationStatus = document.getElementById("edit-validation-status");
 
 // =====================================================
 // INIT
@@ -71,6 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-save-institution")
     .addEventListener("click", saveInstitutionChanges);
+
+  document
+    .getElementById("filter-only-carabineros")
+    ?.addEventListener("change", searchInstitutions);
 
   // ESTADO LOGIN
   if (sessionStorage.getItem("logged") === "true") {
@@ -149,7 +157,6 @@ function logout() {
   window.location.href = "/index.html";
 }
 
-
 function enforceSearchAuth() {
   // Comentario en español:
   // Si no hay sesión, esta pantalla no se puede ver (redirige al login)
@@ -173,6 +180,7 @@ searchTextInput.addEventListener("keyup", searchInstitutions);
 zoneFilter.addEventListener("change", searchInstitutions);
 regionFilter.addEventListener("change", searchInstitutions);
 comunaFilter.addEventListener("change", searchInstitutions);
+groupFilter?.addEventListener("change", searchInstitutions);
 
 // =====================================================
 // CARGAR CATÁLOGOS FILTROS
@@ -195,10 +203,29 @@ async function loadCatalogs() {
     .select("id, name")
     .order("name");
   fillSelect(comunaFilter, comunas);
+
+  // Comentario en español:
+  // Catálogo PRO de grupos para filtrar (Carabineros, Hospitales, etc.)
+  const { data: groups, error: groupsError } = await supabaseClient
+    .from("institution_groups")
+    .select("id, name")
+    .eq("active", true)
+    .order("name");
+
+  if (groupsError) {
+    console.error("Error cargando grupos:", groupsError);
+    showCopyToast("No se pudieron cargar los grupos");
+  } else {
+    fillSelect(groupFilter, groups);
+  }
 }
 
-function fillSelect(select, data) {
-  select.innerHTML = `<option value="">${select.options[0].text}</option>`;
+function fillSelect(select, data, placeholderText) {
+  if (!select) return;
+
+  const placeholder = placeholderText || select.options?.[0]?.text || "Seleccione";
+
+  select.innerHTML = `<option value="">${placeholder}</option>`;
   data?.forEach((i) => {
     const opt = document.createElement("option");
     opt.value = i.id;
@@ -230,6 +257,7 @@ async function searchInstitutions() {
       institution_name,
       email,
       observation,
+      institution_group_id,
       region:regions(name),
       comuna:comunas(name),
       files:institution_files(file_name, file_path)
@@ -244,6 +272,12 @@ async function searchInstitutions() {
     query = query.or(
       `institution_name.ilike.${term},observation.ilike.${term},email.ilike.${term}`,
     );
+  }
+
+  // ✅ Filtro PRO por grupo
+  const groupId = groupFilter?.value || "";
+  if (groupId) {
+    query = query.eq("institution_group_id", parseInt(groupId, 10));
   }
 
   if (regionFilter.value) query = query.eq("region_id", regionFilter.value);
@@ -261,13 +295,11 @@ async function searchInstitutions() {
   }
 
   resultsBody.innerHTML = "";
-
   resultsCounter.textContent = `Registros encontrados: ${data.length}`;
   data.forEach(renderRow);
 
   applyRoleUI(sessionStorage.getItem("role"));
 }
-
 // =====================================================
 // STORAGE
 // =====================================================
@@ -324,12 +356,18 @@ async function editInstitution(id) {
 
   const { data } = await supabaseClient
     .from("institutions")
-    .select(
-      `
-      id, institution_name, email, observation, region_id, comuna_id,
+    .select(`
+      id,
+      institution_name,
+      email,
+      observation,
+      region_id,
+      comuna_id,
+      institution_group_id,
+      submission_method_id,
+      validation_status_id,
       files:institution_files(id, file_name, file_path, uploaded_at)
-    `,
-    )
+    `)
     .eq("id", id)
     .single();
 
@@ -339,10 +377,15 @@ async function editInstitution(id) {
   editObservation.value = data.observation;
 
   await loadEditRegions(data.region_id, data.comuna_id);
+  await loadEditCatalogs(
+    data.institution_group_id,
+    data.submission_method_id,
+    data.validation_status_id
+  );
+
   renderEditFiles(data.files || []);
   editModal.show();
 }
-
 // =====================================================
 // REGIÓN / COMUNA UX
 // =====================================================
@@ -395,7 +438,7 @@ async function saveInstitutionChanges() {
   try {
     btn.disabled = true;
     btn.innerHTML =
-      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+      '<span class="spinner-border spinner-border-sm"></span> Guardando...';
 
     let regionId = editRegion.value || null;
     let comunaId = editComuna.value || null;
@@ -404,7 +447,6 @@ async function saveInstitutionChanges() {
     let finalComuna = COMUNA_NO_DEFINIDA_ID;
     let finalZone = ZONE_NO_DEFINIDA_ID;
 
-    // 🔵 Comuna seleccionada → domina todo
     if (comunaId) {
       const { data } = await supabaseClient
         .from("comunas")
@@ -417,10 +459,7 @@ async function saveInstitutionChanges() {
         finalRegion = data.region_id;
         finalZone = data.regions.zone_id;
       }
-    }
-
-    // 🟡 Solo región
-    else if (regionId) {
+    } else if (regionId) {
       const { data } = await supabaseClient
         .from("regions")
         .select("id, zone_id")
@@ -430,17 +469,18 @@ async function saveInstitutionChanges() {
       if (data) {
         finalRegion = data.id;
         finalZone = data.zone_id;
-        finalComuna = COMUNA_NO_DEFINIDA_ID;
       }
     }
 
-    // Actualizar institución
     const { error: updateError } = await supabaseClient
       .from("institutions")
       .update({
         institution_name: editInstitutionName.value,
         email: editEmail.value,
         observation: editObservation.value,
+        institution_group_id: parseInt(editGroup.value, 10),
+        submission_method_id: parseInt(editSubmissionMethod.value, 10),
+        validation_status_id: parseInt(editValidationStatus.value, 10),
         region_id: finalRegion,
         comuna_id: finalComuna,
         zone_id: finalZone,
@@ -449,12 +489,10 @@ async function saveInstitutionChanges() {
       .eq("id", editIdInput.value);
 
     if (updateError) {
-      console.error("Error al actualizar institución:", updateError);
       showCopyToast(`Error: ${updateError.message}`);
       return;
     }
 
-    // Subir archivo si hay uno nuevo
     if (editNewFileInput.files.length) {
       await uploadNewPdf(editIdInput.value);
     }
@@ -462,8 +500,9 @@ async function saveInstitutionChanges() {
     editModal.hide();
     showCopyToast("Cambios guardados correctamente");
     searchInstitutions();
+
   } catch (error) {
-    console.error("Error en saveInstitutionChanges:", error);
+    console.error(error);
     showCopyToast("Error al guardar cambios");
   } finally {
     btn.disabled = false;
@@ -789,7 +828,47 @@ function applyRoleUI(role) {
     // Comentario en español:
     // Redirección al HTML de ingreso de instituciones (ruta estable)
     goEntryBtn.onclick = () => {
-      window.location.href = "/pages/institution-system/insert-institution.html";
+      window.location.href =
+        "/pages/institution-system/insert-institution.html";
     };
   }
+}
+
+async function loadEditCatalogs(selectedGroupId, selectedSubmissionId, selectedValidationId) {
+
+  // GRUPOS
+  const { data: groups } = await supabaseClient
+    .from("institution_groups")
+    .select("id, name")
+    .order("name");
+
+  editGroup.innerHTML = "";
+  groups?.forEach(g => {
+    const opt = new Option(g.name, g.id, false, g.id === selectedGroupId);
+    editGroup.add(opt);
+  });
+
+  // MÉTODOS
+  const { data: methods } = await supabaseClient
+    .from("submission_methods")
+    .select("id, name")
+    .order("name");
+
+  editSubmissionMethod.innerHTML = "";
+  methods?.forEach(m => {
+    const opt = new Option(m.name, m.id, false, m.id === selectedSubmissionId);
+    editSubmissionMethod.add(opt);
+  });
+
+  // ESTADOS
+  const { data: statuses } = await supabaseClient
+    .from("validation_statuses")
+    .select("id, name")
+    .order("name");
+
+  editValidationStatus.innerHTML = "";
+  statuses?.forEach(s => {
+    const opt = new Option(s.name, s.id, false, s.id === selectedValidationId);
+    editValidationStatus.add(opt);
+  });
 }

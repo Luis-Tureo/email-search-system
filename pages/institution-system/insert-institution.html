@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
   <!-- Estilos globales PJUD -->
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/email-search.css" />
 
   <!-- Estilos de esta vista -->
   <link rel="stylesheet" href="/assets/css/institution-system.css" />
@@ -107,6 +107,28 @@
               <div class="form-hint">Puedes separar múltiples correos con <b>;</b></div>
             </div>
 
+            <div class="col-md-6">
+              <label class="form-label">Método de ingreso <span class="text-danger">*</span></label>
+              <select id="submission-method-select" class="form-select" required>
+                <option value="">Seleccione método</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Estado de validación <span class="text-danger">*</span></label>
+              <select id="validation-status-select" class="form-select" required>
+                <option value="">Seleccione estado</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Grupo <span class="text-danger">*</span></label>
+              <select id="institution-group-select" class="form-select" required>
+                <option value="">Seleccione grupo</option>
+              </select>
+              <div class="form-hint">Seleccione el tipo de institución (ej: Carabineros, Hospitales).</div>
+            </div>
+            
             <div class="col-md-4">
               <label class="form-label">Región</label>
               <select id="region-select" class="form-select" disabled>
@@ -137,8 +159,6 @@
             <div class="col-12">
               <label class="form-label">Documento PDF (opcional)</label>
               <input type="file" id="institution-pdf" class="form-control" accept="application/pdf">
-              <div class="form-hint">Se sube a Storage <b>institution-files</b> y se registra en
-                <b>institution_files</b>.</div>
             </div>
 
             <div class="col-12 d-flex justify-content-end gap-2 mt-2">
