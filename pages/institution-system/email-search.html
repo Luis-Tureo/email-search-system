@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <!-- Estilos propios -->
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/email-search.css">
 </head>
 
 <body class="hidden-scroll">
@@ -57,48 +57,49 @@
 
                 <!-- ID -->
                 <div class="col-6 col-md-1">
-                    <label for="search-id" class="form-label mb-1">ID</label>
                     <input type="text" id="search-id" class="form-control text-center" placeholder="ID" maxlength="4"
                         inputmode="numeric" />
                 </div>
 
                 <!-- Texto -->
-                <div class="col-12 col-md-4">
-                    <label for="search-text" class="form-label mb-1">Búsqueda</label>
+                <div class="col-12 col-md-3">
                     <input type="text" id="search-text" class="form-control"
                         placeholder="Buscar institución, observación o correo" />
                 </div>
 
                 <!-- Zona -->
                 <div class="col-6 col-md-2">
-                    <label for="zone-filter" class="form-label mb-1">Zona</label>
                     <select id="zone-filter" class="form-select" disabled>
-                        <option value="">Todas</option>
+                        <option value="">Zonas</option>
                     </select>
                 </div>
 
                 <!-- Región -->
                 <div class="col-6 col-md-2">
-                    <label for="region-filter" class="form-label mb-1">Región</label>
                     <select id="region-filter" class="form-select" disabled>
-                        <option value="">Todas</option>
+                        <option value="">Regiones</option>
                     </select>
                 </div>
 
                 <!-- Comuna -->
                 <div class="col-6 col-md-2">
-                    <label for="comuna-filter" class="form-label mb-1">Comuna</label>
                     <select id="comuna-filter" class="form-select" disabled>
-                        <option value="">Todas</option>
+                        <option value="">Comunas</option>
                     </select>
                 </div>
 
-                <!-- Botón admin -->
-                <div class="col-12 col-md-1 d-grid">
+                <!-- Grupo -->
+                <div class="col-6 col-md-2">
+                    <select id="group-filter" class="form-select" disabled>
+                        <option value="">Instituciones</option>
+                    </select>
+                </div>
+
+                <!-- Botón admin (queda en zona lógica, sin tapar tabla) -->
+                <div class="col-12 col-md-auto ms-md-auto d-flex justify-content-end">
                     <button id="btn-go-insert-institution" class="btn btn-primary btn-sm d-none">
                         <i class="bi bi-plus-circle"></i> Ingresar
                     </button>
-
                 </div>
 
             </div>
@@ -127,7 +128,6 @@
             <div class="mt-2">
                 <span id="results-counter">Registros encontrados: 0</span>
             </div>
-
         </div>
     </div>
 
@@ -166,6 +166,21 @@
                         <div class="col-md-6">
                             <label class="form-label">Comuna</label>
                             <select id="edit-comuna" class="form-select"></select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Grupo</label>
+                            <select id="edit-group" class="form-select"></select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Método de ingreso</label>
+                            <select id="edit-submission-method" class="form-select"></select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Estado de validación</label>
+                            <select id="edit-validation-status" class="form-select"></select>
                         </div>
 
                         <div class="col-12">

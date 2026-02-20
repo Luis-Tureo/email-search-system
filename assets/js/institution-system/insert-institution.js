@@ -37,7 +37,18 @@ const zoneReadonly = document.getElementById("zone-readonly");
 
 const institutionNameInput = document.getElementById("institution-name");
 const institutionEmailInput = document.getElementById("institution-email");
-const institutionObservationInput = document.getElementById("institution-observation");
+const submissionMethodSelect = document.getElementById(
+  "submission-method-select",
+);
+const validationStatusSelect = document.getElementById(
+  "validation-status-select",
+);
+const institutionGroupSelect = document.getElementById(
+  "institution-group-select",
+);
+const institutionObservationInput = document.getElementById(
+  "institution-observation",
+);
 const institutionPdfInput = document.getElementById("institution-pdf");
 
 const noPermissionBox = document.getElementById("no-permission");
@@ -47,7 +58,7 @@ const btnClear = document.getElementById("btn-clear");
 /* =========================
    INIT
    ========================= */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   loginScreen = document.getElementById("login-screen");
   appContent = document.getElementById("app-content");
 
@@ -73,7 +84,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logged") === "true") {
     showApp();
     applyRoleUI(sessionStorage.getItem("role"));
-    loadRegions();
+
+    // Cargar catálogos (esperar para evitar selects vacíos)
+    await loadRegions();
+    await loadSubmissionMethods();
+    await loadValidationStatuses();
+    await loadInstitutionGroups(); // ✅ FALTABA
   } else {
     loginScreen.classList.remove("d-none");
     appContent.classList.add("d-none");
@@ -108,7 +124,13 @@ async function doLogin() {
 
     showApp();
     applyRoleUI(data[0].role);
+
+    // Cargar catálogos
     await loadRegions();
+    await loadSubmissionMethods();
+    await loadValidationStatuses();
+    await loadInstitutionGroups();
+
     showToast("Sesión iniciada");
   } catch (err) {
     console.error(err);
@@ -137,7 +159,6 @@ function logout() {
 
   window.location.href = "/index.html";
 }
-
 
 /* =========================
    ROLES
@@ -293,8 +314,17 @@ async function createInstitution() {
   const email = institutionEmailInput.value.trim();
   const observation = institutionObservationInput.value.trim();
 
+  const submissionMethodId = submissionMethodSelect?.value || "";
+  const validationStatusId = validationStatusSelect?.value || "";
+  const institutionGroupId = institutionGroupSelect?.value || "";
+
+  if (!institutionGroupId) return showToast("Debe seleccionar el grupo");
   if (!name) return showToast("Debe ingresar el nombre de la institución");
   if (!email) return showToast("Debe ingresar al menos un correo");
+  if (!submissionMethodId)
+    return showToast("Debe seleccionar el método de ingreso");
+  if (!validationStatusId)
+    return showToast("Debe seleccionar el estado de validación");
 
   const originalBtnHtml = btnSave.innerHTML;
 
@@ -345,9 +375,17 @@ async function createInstitution() {
         institution_name: name,
         email: email,
         observation: observation,
+
+        // Campos NOT NULL (catálogos)
+        submission_method_id: parseInt(submissionMethodId, 10),
+        validation_status_id: parseInt(validationStatusId, 10),
+        institution_group_id: parseInt(institutionGroupId, 10),
+
+        // Campos NOT NULL (geografía)
         region_id: finalRegion,
         comuna_id: finalComuna,
         zone_id: finalZone,
+
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -421,7 +459,9 @@ async function uploadInstitutionPdf(institutionId, file) {
 
       // Si falla el registro, intentamos limpiar el archivo subido
       try {
-        await supabaseClient.storage.from("institution-files").remove([filePath]);
+        await supabaseClient.storage
+          .from("institution-files")
+          .remove([filePath]);
       } catch (cleanupErr) {
         console.error("Error limpiando PDF:", cleanupErr);
       }
@@ -445,6 +485,11 @@ function clearForm() {
   institutionEmailInput.value = "";
   institutionObservationInput.value = "";
   institutionPdfInput.value = "";
+
+  // Reset selects obligatorios
+  if (submissionMethodSelect) submissionMethodSelect.value = "";
+  if (institutionGroupSelect) institutionGroupSelect.value = "";
+  if (validationStatusSelect) validationStatusSelect.value = "";
 
   regionSelect.value = "";
   comunaSelect.innerHTML = `<option value="">Seleccione comuna</option>`;
@@ -474,4 +519,89 @@ function generateSafeFileName(filename) {
 
   const finalBase = normalized || `documento_${Date.now()}`;
   return `${finalBase}${ext}`;
+}
+
+/* =========================
+   CATÁLOGOS MÉTODO / ESTADO
+   ========================= */
+async function loadSubmissionMethods() {
+  try {
+    if (!submissionMethodSelect) return;
+
+    submissionMethodSelect.disabled = true;
+    submissionMethodSelect.innerHTML = `<option value="">Seleccione método</option>`;
+
+    const { data, error } = await supabaseClient
+      .from("submission_methods")
+      .select("id, name")
+      .order("name");
+
+    if (error) {
+      console.error(error);
+      showToast("No se pudieron cargar métodos de ingreso");
+      return;
+    }
+
+    data.forEach((m) => submissionMethodSelect.add(new Option(m.name, m.id)));
+    submissionMethodSelect.disabled = false;
+  } catch (e) {
+    console.error(e);
+    showToast("Error al cargar métodos de ingreso");
+  }
+}
+
+async function loadValidationStatuses() {
+  try {
+    if (!validationStatusSelect) return;
+
+    validationStatusSelect.disabled = true;
+    validationStatusSelect.innerHTML = `<option value="">Seleccione estado</option>`;
+
+    const { data, error } = await supabaseClient
+      .from("validation_statuses")
+      .select("id, name")
+      .order("name");
+
+    if (error) {
+      console.error(error);
+      showToast("No se pudieron cargar estados de validación");
+      return;
+    }
+
+    data.forEach((s) => validationStatusSelect.add(new Option(s.name, s.id)));
+    validationStatusSelect.disabled = false;
+  } catch (e) {
+    console.error(e);
+    showToast("Error al cargar estados de validación");
+  }
+}
+
+/* =========================
+   CATÁLOGO GRUPOS
+   ========================= */
+async function loadInstitutionGroups() {
+  try {
+    if (!institutionGroupSelect) return;
+
+    institutionGroupSelect.disabled = true;
+    institutionGroupSelect.innerHTML = `<option value="">Seleccione grupo</option>`;
+
+    const { data, error } = await supabaseClient
+      .from("institution_groups")
+      .select("id, name")
+      .eq("active", true)
+      .order("name");
+
+    if (error) {
+      console.error(error);
+      showToast("No se pudieron cargar grupos");
+      return;
+    }
+
+    data.forEach((g) => institutionGroupSelect.add(new Option(g.name, g.id)));
+    institutionGroupSelect.disabled = false;
+  } catch (e) {
+    console.error(e);
+    showToast("Error al cargar grupos");
+  }
 }
