@@ -1,0 +1,389 @@
+:root {
+  --pjud-blue: #113F67;
+  --pjud-navy: #0b1f33;
+  --pjud-border: #d9e2ea;
+  --pjud-muted: #5b6773;
+}
+
+body {
+  background: #f5f7fb;
+  color: var(--pjud-navy);
+}
+
+/* Badge PJUD */
+.uap-badge,
+.uap-mobile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--pjud-blue);
+  color: #113F67;
+  font-weight: 700;
+  font-size: 12px;
+}
+.uap-badge img,
+.uap-mobile-badge img {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
+/* ================= BOTONES TRÁMITE ================= */
+
+.uap-procedure-btn {
+  border: 1px solid var(--pjud-blue);
+  background: var(--pjud-blue);
+  color: #ffffff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.uap-procedure-btn i {
+  color: #ffffff;
+  margin-right: 8px;
+}
+
+.uap-procedure-btn:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+}
+
+.uap-procedure-btn:hover i {
+  color: var(--pjud-blue);
+}
+
+/* ================= BOTÓN PRINCIPAL (GENERAR PDF) ================= */
+
+.btn-primary {
+  background: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+}
+
+/* Aviso privacidad */
+.uap-privacy-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #ffe8a1;
+  background: #fff7da;
+}
+.uap-privacy-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--pjud-blue);
+  padding: 4px;
+}
+.uap-privacy-title {
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.uap-privacy-text {
+  font-size: 13px;
+  color: var(--pjud-muted);
+}
+
+/* Títulos */
+.uap-h5,
+.uap-mobile-h5 {
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+/* Dividers */
+.uap-divider,
+.uap-mobile-divider {
+  border-color: var(--pjud-border);
+}
+
+/* Toast global */
+.toast-copiar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  background: rgba(11, 31, 51, 0.92);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+}
+.toast-copiar.show {
+  opacity: 1;
+}
+
+/* ================= MOBILE ================= */
+.uap-mobile {
+  background: #f5f7fb;
+  padding-bottom: 110px; /* espacio para footer fijo */
+}
+
+.uap-mobile-shell {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.uap-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--pjud-border);
+  margin-bottom: 12px;
+}
+
+.uap-mobile-title {
+  font-weight: 900;
+  font-size: 18px;
+}
+.uap-mobile-subtitle {
+  font-size: 12px;
+  color: var(--pjud-muted);
+}
+
+.uap-mobile-card {
+  background: #fff;
+  border: 1px solid var(--pjud-border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.uap-mobile-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  background: rgba(245, 247, 251, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--pjud-border);
+  z-index: 999;
+}
+
+/* Inputs */
+.form-control,
+.form-select {
+  border-radius: 12px;
+  border-color: var(--pjud-border);
+}
+.btn-primary {
+  background: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+}
+.btn-primary:hover {
+  filter: brightness(0.95);
+}
+
+/* ================= HEADER / BANNER SUPERIOR ================= */
+
+.uap-header,
+.uap-mobile-header {
+  background: var(--pjud-blue);
+  color: #ffffff;
+  border-radius: 12px;
+  border: none;
+}
+
+.uap-mobile-title,
+.uap-mobile-subtitle {
+  color: #ffffff;
+}
+
+.uap-mobile-subtitle {
+  opacity: 0.85;
+}
+
+/* Badge PJUD */
+.uap-badge,
+.uap-mobile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.uap-badge img,
+.uap-mobile-badge img {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
+
+/* =====================================================
+   UAP CONFIG CORREO (misma línea gráfica PJUD)
+   - Agregar al final de styles.css
+   ===================================================== */
+
+:root {
+  --pjud-blue: #113F67;
+  --pjud-navy: #0b1f33;
+  --pjud-border: #d9e2ea;
+  --pjud-muted: #5b6773;
+}
+
+body {
+  background: #f5f7fb;
+  color: var(--pjud-navy);
+}
+
+/* Contenedor centrado y ancho controlado (similar a Ingreso UAP) */
+.uap-config-page {
+  min-height: 100vh;
+  padding: 26px 14px 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.uap-config-wrap {
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Banner superior estilo UAP */
+.uap-config-header {
+  background: var(--pjud-blue);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.uap-config-title {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.uap-config-subtitle {
+  font-size: 13px;
+  opacity: 0.88;
+  margin-top: 2px;
+}
+
+/* Caja de contenido */
+.uap-config-card {
+  background: #ffffff;
+  border: 1px solid var(--pjud-border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 8px rgba(11, 31, 51, 0.06);
+}
+
+.uap-config-text {
+  font-size: 13px;
+  color: var(--pjud-muted);
+  margin-bottom: 12px;
+}
+
+/* Inputs estilo PJUD */
+.form-control,
+.form-select {
+  border-radius: 12px;
+  border-color: var(--pjud-border);
+}
+
+/* Botón principal PJUD (hover blanco con texto azul) */
+.btn-primary {
+  background: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: var(--pjud-blue);
+}
+
+/* Botón secundario sobrio */
+.btn-secondary {
+  border-radius: 12px;
+}
+
+/* Botón salir (si lo usas en esta página) */
+.uap-config-logout {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.uap-config-logout:hover {
+  background: #ffffff;
+  color: var(--pjud-blue);
+  border-color: #ffffff;
+}
+
+/* Toast global (mismo que tu estándar) */
+.toast-copiar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  background: rgba(11, 31, 51, 0.92);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+}
+
+.toast-copiar.show {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .uap-config-header {
+    padding: 14px 14px;
+  }
+
+  .uap-config-title {
+    font-size: 18px;
+  }
+
+  .uap-config-wrap {
+    max-width: 520px;
+  }
+}
