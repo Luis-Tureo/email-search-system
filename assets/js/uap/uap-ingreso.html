@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Ingreso UAP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+  <!-- CSS institucional -->
+  <link rel="stylesheet" href="../../assets/css/uap.css" />
+</head>
+
+<body class="uap-desktop">
+  <div class="container py-3">
+
+    <!-- Header -->
+    <div class="uap-header card shadow-sm mb-3">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-0">Ingreso UAP</h4>
+          <div class="uap-subtitle">Registro de Denuncias y Medidas de Protección</div>
+        </div>
+        <div class="uap-badge">
+          <img src="../../assets/img/pjud_blanco.png" alt="Poder Judicial" style="height:70px; width:auto;" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Selección trámite -->
+    <section id="procedure-selection" class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="alert alert-warning uap-privacy-alert mb-3" role="alert">
+          <div>
+            <div class="uap-privacy-title  text-center">Aviso de privacidad</div>
+            <div class="uap-privacy-text">
+              Esta aplicación <strong>no guarda ni almacena datos personales</strong>; la información
+              ingresada se utiliza exclusivamente para generar el archivo PDF para su impresión,
+              realizándose dicho tratamiento conforme a la <strong>Ley N° 21.719</strong> sobre Protección de
+              Datos Personales.
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-2 text-center text-muted">Seleccione un trámite para continuar</div>
+
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('vif')">
+              <i class="bi bi-shield-exclamation"></i> Denuncia Violencia Intrafamiliar
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProtectionMeasureProcedure()">
+              <i class="bi bi-person-hearts"></i> Medida de Protección
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('request-indicates')">
+              <i class="bi bi-file-earmark-text"></i> Solicitud que indica
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('answer-transfer')">
+              <i class="bi bi-reply"></i> Contesta Traslado
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('comply-ordered')">
+              <i class="bi bi-check2-square"></i> Cumple lo Ordenado
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('set-aside')">
+              <i class="bi bi-x-circle"></i> Deje sin Efecto
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('visits-noncompliance')">
+              <i class="bi bi-people"></i> Incumplimiento de Visitas
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn uap-procedure-btn w-100" type="button" onclick="startProcedure('sworn-statement')">
+              <i class="bi bi-file-earmark-lock2"></i> Declaración Jurada (Alimentos)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form VIF -->
+    <form id="form-uap" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between gap-2 flex-wrap mb-3">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadTestData()">
+              <i class="bi bi-database-add"></i> Cargar datos de prueba
+            </button>
+          </div>
+
+          <h5 class="uap-h5">Datos del Denunciante</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" id="applicant_rut" name="applicant_rut" required />
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" id="applicant_name" name="applicant_name" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="applicant_phone" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="applicant_email" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Forma de notificación autorizada</label>
+              <select class="form-select" name="notification_authorized_method" id="notification_authorized_method">
+                <option value="" selected>Seleccione una opción</option>
+                <option value="Correo electrónico">Correo electrónico</option>
+                <option value="Teléfono">Teléfono</option>
+                <option value="Carta">Carta</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Otra">Otra</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="applicant_address" required />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Actividad</label>
+              <input type="text" class="form-control" name="applicant_activity" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="uap-h5">Datos de la Víctima</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" id="victim_rut" name="victim_rut" required />
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" id="victim_name" name="victim_name" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" class="form-control" name="victim_birthdate" />
+            </div>
+
+            <div class="col-12 col-md-2">
+              <label class="form-label">Edad</label>
+              <input type="number" class="form-control" name="victim_age" readonly />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Etapa de vida de la víctima</label>
+              <select class="form-select" name="victim_life_stage" id="victim_life_stage">
+                <option value="" selected>Se selecciona automáticamente</option>
+                <option value="Niñez">Niñez (0 a 13 años)</option>
+                <option value="Adolescente">Adolescente (14 a 17 años)</option>
+                <option value="Adulto">Adulto (18 a 59 años)</option>
+                <option value="Adulto mayor">Adulto mayor (60 años o más)</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="victim_phone" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="victim_email" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="victim_address" required />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Actividad</label>
+              <input type="text" class="form-control" name="victim_activity" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="uap-h5">Datos del Denunciado</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" id="accused_rut" name="accused_rut" required />
+            </div>
+
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" id="accused_name" name="accused_name" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="accused_phone" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="accused_email" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="accused_address" required />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Actividad</label>
+              <input type="text" class="form-control" name="accused_activity" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Vínculo / parentesco</label>
+              <select class="form-select" name="relationship" id="relationship">
+                <option value="" selected>Seleccione parentesco</option>
+                <option value="Padre">Padre</option>
+                <option value="Madre">Madre</option>
+                <option value="Hijo/a">Hijo/a</option>
+                <option value="Cónyuge">Cónyuge</option>
+                <option value="Conviviente">Conviviente</option>
+                <option value="Ex pareja">Ex pareja</option>
+                <option value="Familiar">Familiar</option>
+                <option value="Otro">Otro</option>
+                <option value="Desconocido">Desconocido</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Form MP -->
+    <form id="form-mp" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="loadTestDataMP()">
+            <i class="bi bi-database-add"></i> Cargar datos de prueba MP
+          </button>
+
+          <!-- ✅ NNA REPETIBLE -->
+          <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+            <h5 class="uap-h5 mb-0">Datos del Niño/Niña/Adolescente (NNA)</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addProtectionMeasureChild()">
+              <i class="bi bi-plus-circle"></i>
+            </button>
+          </div>
+
+          <div id="mp-children">
+            <div class="mp-child border rounded-3 p-3 mb-3" data-child-index="1">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>NNA #1</strong>
+                <button type="button" class="btn btn-outline-danger btn-sm d-none" data-action="remove-child">
+                  <i class="bi bi-dash-circle"></i> Quitar
+                </button>
+
+              </div>
+
+              <div class="row g-2">
+                <div class="col-12 col-md-8">
+                  <label class="form-label">Nombre completo</label>
+                  <input class="form-control" name="mp_child_1_name" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">RUN</label>
+                  <input class="form-control rut-field" name="mp_child_1_rut" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Fecha de nacimiento</label>
+                  <input class="form-control" type="date" name="mp_child_1_birthdate" />
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label">Edad</label>
+                  <input class="form-control" name="mp_child_1_age" readonly />
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Categoría (auto)</label>
+                  <input class="form-control" name="mp_child_1_category" readonly />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Domicilio</label>
+                  <input class="form-control" name="mp_child_1_address" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Teléfono</label>
+                  <input class="form-control" name="mp_child_1_phone" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">E-mail</label>
+                  <input class="form-control" type="email" name="mp_child_1_email" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Escolaridad</label>
+                  <select class="form-select" name="mp_child_1_schooling">
+                    <option value="">Seleccione escolaridad</option>
+                    <option>Preescolar</option>
+                    <option>Básica incompleta</option>
+                    <option>Básica completa</option>
+                    <option>Media incompleta</option>
+                    <option>Media completa</option>
+                    <option>Técnico profesional</option>
+                    <option>Superior incompleta</option>
+                    <option>Superior completa</option>
+                    <option>Otra</option>
+                    <option>No aplica / Sin información</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /NNA REPETIBLE -->
+
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+            <h5 class="uap-h5 mb-0">Requirente(s)</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addProtectionMeasureRequester()">
+              <i class="bi bi-plus-circle"></i>
+            </button>
+          </div>
+
+          <div id="mp-requesters">
+            <div class="mp-requester border rounded-3 p-3 mb-3" data-requester-index="1">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Requirente #1</strong>
+                <button type="button" class="btn btn-outline-danger btn-sm d-none" data-action="remove-requester">
+                  <i class="bi bi-dash-circle"></i>
+                </button>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-12 col-md-8">
+                  <label class="form-label">Nombre completo</label>
+                  <input class="form-control" name="mp_requester_1_name" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">RUN</label>
+                  <input class="form-control rut-field" name="mp_requester_1_rut" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Actividad</label>
+                  <select class="form-select" name="mp_requester_1_activity">
+                    <option value="">Seleccione actividad</option>
+                    <option>Sin actividad</option>
+                    <option>Trabajador/a dependiente</option>
+                    <option>Trabajador/a independiente</option>
+                    <option>Dueña/o de casa</option>
+                    <option>Estudiante</option>
+                    <option>Cesante</option>
+                    <option>Jubilado/a</option>
+                    <option>Otra</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-8">
+                  <label class="form-label">Domicilio</label>
+                  <input class="form-control" name="mp_requester_1_address" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Teléfono</label>
+                  <input class="form-control" name="mp_requester_1_phone" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label">E-mail</label>
+                  <input class="form-control" type="email" name="mp_requester_1_email" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-8">
+                  <label class="form-label">Vínculo / parentesco con el NNA</label>
+                  <select class="form-select" name="mp_requester_1_relationship">
+                    <option value="">Seleccione parentesco</option>
+                    <option>Padre</option>
+                    <option>Madre</option>
+                    <option>Hijo/a</option>
+                    <option>Cónyuge</option>
+                    <option>Conviviente</option>
+                    <option>Ex pareja</option>
+                    <option>Familiar</option>
+                    <option>Otro</option>
+                    <option>Desconocido</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Datos del Solicitado</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo</label>
+              <input class="form-control" name="mp_requested_name" autocomplete="off" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN</label>
+              <input class="form-control" name="mp_requested_rut" autocomplete="off" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Actividad</label>
+              <select class="form-select" name="mp_requested_activity">
+                <option value="">Seleccione actividad</option>
+                <option>Sin actividad</option>
+                <option>Trabajador/a dependiente</option>
+                <option>Trabajador/a independiente</option>
+                <option>Dueña/o de casa</option>
+                <option>Estudiante</option>
+                <option>Cesante</option>
+                <option>Jubilado/a</option>
+                <option>Otra</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-8">
+              <label class="form-label">Domicilio</label>
+              <input class="form-control" name="mp_requested_address" autocomplete="off" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" name="mp_requested_phone" autocomplete="off" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">E-mail</label>
+              <input class="form-control" type="email" name="mp_requested_email" autocomplete="off" />
+            </div>
+            <div class="col-12 col-md-8">
+              <label class="form-label">Vínculo / parentesco con el NNA</label>
+              <select class="form-select" name="mp_requested_relationship">
+                <option value="">Seleccione parentesco</option>
+                <option>Padre</option>
+                <option>Madre</option>
+                <option>Hijo/a</option>
+                <option>Cónyuge</option>
+                <option>Conviviente</option>
+                <option>Ex pareja</option>
+                <option>Familiar</option>
+                <option>Otro</option>
+                <option>Desconocido</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-request-indicates" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="request-indicates">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Solicitud que indica</h5>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha (Ancud)</label>
+              <input type="date" class="form-control" name="req_date" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="req_rit" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Juzgado de origen</label>
+              <input type="text" class="form-control" name="req_origin_court" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label d-block">Calidad (marcar)</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="req_role" value="Demandante" id="req_role_dem">
+                  <label class="form-check-label" for="req_role_dem">Demandante</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="req_role" value="Demandado" id="req_role_dedo">
+                  <label class="form-check-label" for="req_role_dedo">Demandado</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="req_role" value="Solicitante" id="req_role_sol">
+                  <label class="form-check-label" for="req_role_sol">Solicitante</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Datos del compareciente</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="req_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="req_rut" required />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="req_address" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna *</label>
+              <input type="text" class="form-control" name="req_comuna" value="Ancud" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="req_phone" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="req_email" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Ocupación</label>
+              <input type="text" class="form-control" name="req_occupation" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Empresa en que trabaja</label>
+              <input type="text" class="form-control" name="req_company" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Modifica datos</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="req_modify_data" value="Sí" id="req_mod_yes">
+                  <label class="form-check-label" for="req_mod_yes">Sí</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="req_modify_data" value="No" id="req_mod_no">
+                  <label class="form-check-label" for="req_mod_no">No</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Forma especial de notificación</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="req_notify_phone" value="1" id="req_n_phone">
+                  <label class="form-check-label" for="req_n_phone">Teléfono</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="req_notify_email" value="1" id="req_n_email">
+                  <label class="form-check-label" for="req_n_email">Correo electrónico</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Solicitud *</label>
+              <textarea class="form-control" name="req_request_text" rows="8" required></textarea>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="req_no_tech" value="1" id="req_no_tech">
+                <label class="form-check-label" for="req_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-answer-transfer" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="answer-transfer">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Contesta Traslado</h5>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha (Ancud)</label>
+              <input type="date" class="form-control" name="at_date" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="at_rit" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Juzgado de origen</label>
+              <input type="text" class="form-control" name="at_origin_court" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label d-block">Calidad (marcar)</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="at_role" value="Demandante" id="at_role_dem">
+                  <label class="form-check-label" for="at_role_dem">Demandante</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="at_role" value="Demandado" id="at_role_dedo">
+                  <label class="form-check-label" for="at_role_dedo">Demandado</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Datos del compareciente</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="at_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="at_rut" required />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="at_address" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna</label>
+              <input type="text" class="form-control" name="at_comuna" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="at_phone" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="at_email" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Ocupación</label>
+              <input type="text" class="form-control" name="at_occupation" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Empresa en que trabaja</label>
+              <input type="text" class="form-control" name="at_company" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Modifica datos</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="at_modify_data" value="Sí" id="at_mod_yes">
+                  <label class="form-check-label" for="at_mod_yes">Sí</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="at_modify_data" value="No" id="at_mod_no">
+                  <label class="form-check-label" for="at_mod_no">No</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Forma especial de notificación</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="at_notify_phone" value="1" id="at_n_phone">
+                  <label class="form-check-label" for="at_n_phone">Teléfono</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="at_notify_email" value="1" id="at_n_email">
+                  <label class="form-check-label" for="at_n_email">Correo electrónico</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha del traslado</label>
+              <input type="date" class="form-control" name="at_transfer_date" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Contesta traslado en los siguientes términos *</label>
+              <textarea class="form-control" name="at_answer_text" rows="10" required></textarea>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="at_no_tech" value="1" id="at_no_tech">
+                <label class="form-check-label" for="at_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-comply-ordered" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="answer-transfer">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Cumple lo Ordenado</h5>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha (Ancud)</label>
+              <input type="date" class="form-control" name="co_date" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="co_rit" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Juzgado de origen</label>
+              <input type="text" class="form-control" name="co_origin_court" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label d-block">Calidad (marcar)</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="co_role" value="Demandante" id="co_role_dem">
+                  <label class="form-check-label" for="co_role_dem">Demandante</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="co_role" value="Demandado" id="co_role_dedo">
+                  <label class="form-check-label" for="co_role_dedo">Demandado</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Datos del compareciente</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="co_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="co_rut" required />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="co_address" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna</label>
+              <input type="text" class="form-control" name="co_comuna" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="co_phone" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="co_email" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Ocupación</label>
+              <input type="text" class="form-control" name="co_occupation" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Empresa en que trabaja</label>
+              <input type="text" class="form-control" name="co_company" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Modifica datos</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="co_modify_data" value="Sí" id="co_mod_yes">
+                  <label class="form-check-label" for="co_mod_yes">Sí</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="co_modify_data" value="No" id="co_mod_no">
+                  <label class="form-check-label" for="co_mod_no">No</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Forma especial de notificación</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="co_notify_phone" value="1" id="co_n_phone">
+                  <label class="form-check-label" for="co_n_phone">Teléfono</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="co_notify_email" value="1" id="co_n_email">
+                  <label class="form-check-label" for="co_n_email">Correo electrónico</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha de lo ordenado</label>
+              <input type="date" class="form-control" name="co_ordered_date" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Cumple lo ordenado en los siguientes términos *</label>
+              <textarea class="form-control" name="co_text" rows="10" required></textarea>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="co_no_tech" value="1" id="co_no_tech">
+                <label class="form-check-label" for="co_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-set-aside" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="set-aside">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Deje sin Efecto</h5>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha (Ancud)</label>
+              <input type="date" class="form-control" name="se_date" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="se_rit" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Juzgado de origen</label>
+              <input type="text" class="form-control" name="se_origin_court" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label d-block">Calidad (marcar)</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="se_role" value="Demandante" id="se_role_dem">
+                  <label class="form-check-label" for="se_role_dem">Demandante</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="se_role" value="Demandado" id="se_role_dedo">
+                  <label class="form-check-label" for="se_role_dedo">Demandado</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Datos del compareciente</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="se_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="se_rut" required />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="se_address" required />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna</label>
+              <input type="text" class="form-control" name="se_comuna" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="se_phone" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="se_email" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Ocupación</label>
+              <input type="text" class="form-control" name="se_occupation" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Empresa en que trabaja</label>
+              <input type="text" class="form-control" name="se_company" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Modifica datos</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="se_modify_data" value="Sí" id="se_mod_yes">
+                  <label class="form-check-label" for="se_mod_yes">Sí</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="se_modify_data" value="No" id="se_mod_no">
+                  <label class="form-check-label" for="se_mod_no">No</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Forma especial de notificación</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="se_notify_phone" value="1" id="se_n_phone">
+                  <label class="form-check-label" for="se_n_phone">Teléfono</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="se_notify_email" value="1" id="se_n_email">
+                  <label class="form-check-label" for="se_n_email">Correo electrónico</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Se deje sin efecto (detalle) *</label>
+              <textarea class="form-control" name="se_text" rows="10" required></textarea>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="se_no_tech" value="1" id="se_no_tech">
+                <label class="form-check-label" for="se_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-visits-noncompliance" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="visits-noncompliance">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Incumplimiento de Visitas</h5>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha</label>
+              <input type="date" class="form-control" name="iv_date" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="iv_rit" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Parentesco con los niños</label>
+              <input type="text" class="form-control" name="iv_kinship" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Edad de los niños</label>
+              <input type="text" class="form-control" name="iv_children_ages" />
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Solicitante (datos obligatorios)</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="iv_req_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="iv_req_rut" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="iv_req_address" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna *</label>
+              <input type="text" class="form-control" name="iv_req_comuna" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Ciudad</label>
+              <input type="text" class="form-control" name="iv_req_city" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="iv_req_phone" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="iv_req_email" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Forma especial de notificación</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="iv_req_notify_phone" value="1"
+                    id="iv_req_n_phone">
+                  <label class="form-check-label" for="iv_req_n_phone">Teléfono</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="iv_req_notify_email" value="1"
+                    id="iv_req_n_email">
+                  <label class="form-check-label" for="iv_req_n_email">Correo electrónico</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Solicitado (datos obligatorios)</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="iv_res_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="iv_res_rut" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Domicilio *</label>
+              <input type="text" class="form-control" name="iv_res_address" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna *</label>
+              <input type="text" class="form-control" name="iv_res_comuna" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Ciudad</label>
+              <input type="text" class="form-control" name="iv_res_city" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="iv_res_phone" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="iv_res_email" />
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Solicitud</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="iv_req_1" value="1" id="iv_req_1">
+                <label class="form-check-label" for="iv_req_1">1. Téngase presente</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="iv_req_2" value="1" id="iv_req_2">
+                <label class="form-check-label" for="iv_req_2">2. Recuperación del tiempo no utilizado</label>
+              </div>
+
+              <div class="mt-2">
+                <label class="form-label">Fecha propuesta de recuperación</label>
+                <input type="date" class="form-control" name="iv_recovery_date" />
+              </div>
+
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" name="iv_req_3" value="1" id="iv_req_3">
+                <label class="form-check-label" for="iv_req_3">
+                  3. Ordenar cabal cumplimiento del régimen comunicacional (con apercibimiento)
+                </label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="iv_req_4" value="1" id="iv_req_4">
+                <label class="form-check-label" for="iv_req_4">4. Suspensión o restricción del régimen
+                  comunicacional</label>
+              </div>
+
+              <div class="mt-2">
+                <label class="form-label">5. Otra solicitud (indique)</label>
+                <input type="text" class="form-control" name="iv_req_5_text" />
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Fundamente su petición *</label>
+              <textarea class="form-control" name="iv_fundament" rows="12" required></textarea>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label d-block">Acompaña documentos</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="iv_documents" value="Sí" id="iv_doc_yes">
+                  <label class="form-check-label" for="iv_doc_yes">Sí</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="iv_documents" value="No" id="iv_doc_no">
+                  <label class="form-check-label" for="iv_doc_no">No</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="iv_no_tech" value="1" id="iv_no_tech">
+                <label class="form-check-label" for="iv_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form id="form-sworn-statement" class="d-none">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-test-proc="sworn-statement">
+            Cargar datos de prueba
+          </button>
+          <h5 class="uap-h5">Declaración Jurada (Pensiones de Alimentos)</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha</label>
+              <input type="date" class="form-control" name="dj_date" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RIT *</label>
+              <input type="text" class="form-control" name="dj_rit" required />
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Compareciente</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" class="form-control" name="dj_name" required />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">RUN *</label>
+              <input type="text" class="form-control rut-field" name="dj_rut" required />
+            </div>
+
+            <div class="col-12 col-md-3">
+              <label class="form-label">Edad</label>
+              <input type="number" class="form-control" name="dj_age" min="0" max="130" />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">Estado civil</label>
+              <input type="text" class="form-control" name="dj_marital_status" />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">Estudios</label>
+              <input type="text" class="form-control" name="dj_studies" />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">Profesión / ocupación</label>
+              <input type="text" class="form-control" name="dj_profession" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Calle</label>
+              <input type="text" class="form-control" name="dj_street" />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label">N°</label>
+              <input type="text" class="form-control" name="dj_number" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Villa / población</label>
+              <input type="text" class="form-control" name="dj_neighborhood" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Comuna</label>
+              <input type="text" class="form-control" name="dj_comuna" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Ciudad</label>
+              <input type="text" class="form-control" name="dj_city" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" name="dj_phone" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Correo electrónico</label>
+              <input type="email" class="form-control" name="dj_email" />
+            </div>
+          </div>
+
+          <hr class="uap-divider" />
+
+          <h5 class="uap-h5">Declaración</h5>
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label">A) Actualmente me desempeño como</label>
+              <input type="text" class="form-control" name="dj_current_job" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Ingreso mensual ($)</label>
+              <input type="number" class="form-control" name="dj_monthly_income" min="0" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">B) Ingresos adicionales</label>
+              <textarea class="form-control" name="dj_extra_income" rows="3"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">C) Bienes inmuebles</label>
+              <textarea class="form-control" name="dj_real_estate" rows="3"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">D) Bienes muebles (de valor)</label>
+              <textarea class="form-control" name="dj_valuable_goods" rows="3"></textarea>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="dj_no_tech" value="1" id="dj_no_tech">
+                <label class="form-check-label" for="dj_no_tech">
+                  Solicito ingreso por el Tribunal, por carecer de medios tecnológicos (Art. 5 Ley 20.886).
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Acciones escritorio -->
+    <div id="procedure-actions" class="card shadow-sm d-none">
+      <div class="card-body d-flex flex-wrap gap-2 justify-content-between">
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-outline-secondary" onclick="handleGoToStart()">
+            <i class="bi bi-arrow-left"></i> Volver
+          </button>
+
+          <button type="button" class="btn btn-outline-danger" onclick="handleOpenClearFormModal()">
+            <i class="bi bi-eraser"></i> Limpiar
+          </button>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="btn-preview" type="button" class="btn btn-primary" onclick="handleGeneratePdfAndStore()">
+            <i class="bi bi-eye"></i> Ver PDF
+          </button>
+
+          <button id="btn-send-email" type="button" class="btn btn-outline-primary" onclick="openSendEmailModal()">
+            <i class="bi bi-envelope"></i> Enviar al correo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal PDF (solo escritorio) -->
+  <div class="modal fade" id="pdfModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista previa PDF</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0" style="height:70vh;">
+          <iframe id="pdf-preview" style="width:100%; height:100%; border:0;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal limpiar -->
+  <div class="modal fade" id="clearFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar acción</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">¿Desea limpiar el formulario para agregar un registro nuevo?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" onclick="confirmClearForm()">Sí, limpiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal enviar correo -->
+  <div class="modal fade" id="sendEmailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar envío</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-2">Se enviará una copia del PDF a:</div>
+
+          <div class="mb-2">
+            <div class="text-muted">Destino</div>
+            <div class="fw-bold" id="sendEmailToText">—</div>
+          </div>
+
+          <div class="mb-3" id="sendEmailCcBlock" style="display:none;">
+            <div class="text-muted">Copia</div>
+            <div class="fw-bold" id="sendEmailCcText">—</div>
+          </div>
+
+          <div class="alert alert-warning mb-0" style="font-size: 0.95rem;">
+            <strong>Consejo rápido:</strong> revise el PDF antes de enviar.
+            <br />
+            Si el correo está incorrecto, cierre esta ventana y corríjalo en el formulario.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" onclick="confirmSendEmailForCurrentProcedure()">
+            Sí, enviar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Supabase config -->
+  <script>
+    window.SUPABASE_URL = "https://gajatzawdjbobvpkuwej.supabase.co";
+    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhamF0emF3ZGpib2J2cGt1d2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1NjE5MDMsImV4cCI6MjA4NTEzNzkwM30.wCrSBCiaO7N3qnOWIeZ8XNwusLzLRmX56ruxP8SAmrA";
+  </script>
+
+  <!-- Vendors -->
+  <script src="../../assets/js/vendors/pdfmake.min.js"></script>
+  <script src="../../assets/js/vendors/vfs_fonts.js"></script>
+
+  <!-- Logo base64 -->
+  <script src="../../assets/js/uap/pjud-logo.js"></script>
+
+  <!-- Lógica principal -->
+  <script src="../../assets/js/uap/uap-form.js"></script>
+</body>
+
+</html>
