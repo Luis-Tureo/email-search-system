@@ -275,29 +275,104 @@ async function handleGenerateAndSendPdfMobile() {
 }
 
 /***************************************************
- * ENVÍO EMAIL MOBILE (Edge Function) - base64
+ * EMAIL TARGETS (MOBILE)
+ * - TO: correo institucional configurable (localStorage)
+ * - CC: correo del usuario desde el formulario (si existe)
  ***************************************************/
+function getEmailTargetsForMobileProcedure(procedureType) {
+  // Comentarios en español; variables/funciones en inglés
+  const trimValue = (selector) =>
+    (document.querySelector(selector)?.value || "").trim();
+
+  const to =
+    typeof getMobileNotifyEmail === "function" ? getMobileNotifyEmail() : "";
+
+  // VIF: CC al denunciante
+  if (procedureType === "vif") {
+    const userEmail = trimValue('[name="applicant_email"]');
+    return { to, cc: userEmail ? [userEmail] : [] };
+  }
+
+  // MP: CC al requirente #1
+  if (procedureType === "mp") {
+    const userEmail = trimValue('[name="mp_requester_1_email"]');
+    return { to, cc: userEmail ? [userEmail] : [] };
+  }
+
+  return { to, cc: [] };
+}
+
+/***************************************************
+ * EMAIL META (MOBILE)
+ * - subject/documentLabel/fileName alineado con uap-form.js
+ ***************************************************/
+function buildEmailMetaForMobileProcedure(procedureType) {
+  // Fecha corta para nombre de archivo
+  const dateStamp = new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .replaceAll("-", "")
+    .replaceAll("/", "");
+
+  const defaultMeta = {
+    documentLabel: "UAP Móvil",
+    subject: "Copia de documento generado (UAP Móvil)",
+    fileName: `uap_mobile_documento_${dateStamp}.pdf`,
+  };
+
+  const metaMap = {
+    vif: {
+      documentLabel: "Denuncia VIF (UAP Móvil)",
+      subject: "Copia PDF - Denuncia Violencia Intrafamiliar (UAP Móvil)",
+      fileName: `uap_mobile_vif_${dateStamp}.pdf`,
+    },
+    mp: {
+      documentLabel: "Medida de Protección (UAP Móvil)",
+      subject: "Copia PDF - Medida de Protección (UAP Móvil)",
+      fileName: `uap_mobile_mp_${dateStamp}.pdf`,
+    },
+  };
+
+  return metaMap[procedureType] || defaultMeta;
+}
+
 /***************************************************
  * ENVÍO EMAIL MOBILE (Edge Function) - base64
+ * - Usa correo institucional configurable (getMobileNotifyEmail)
+ * - Mejor diagnóstico en caso de error 500
+ * - En modo testing: NO enviar CC (Resend suele bloquear destinatarios no verificados)
  ***************************************************/
 async function sendPdfByEmailMobile({ pdfBlob, procedureType }) {
   safeToast("Preparando envío...");
 
+  // TO: usar correo configurable (y fallback a tu correo permitido en testing)
+  const to =
+    (typeof getMobileNotifyEmail === "function"
+      ? getMobileNotifyEmail()
+      : ""
+    ).trim() || "l.tureop@gmail.com";
+
   const documentLabel =
     procedureType === "mp"
-      ? "Medida de Protección (UAP)"
-      : "Denuncia Violencia Intrafamiliar (UAP)";
+      ? "Medida de Protección (UAP Móvil)"
+      : "Denuncia Violencia Intrafamiliar (UAP Móvil)";
 
   const subject =
     procedureType === "mp"
       ? "UAP Móvil - Medida de Protección"
       : "UAP Móvil - Denuncia VIF";
 
-  const fileName = `uap_${procedureType}_${Date.now()}.pdf`;
+  const fileName = `uap_mobile_${procedureType}_${Date.now()}.pdf`;
   const pdfBase64 = await blobToBase64Clean(pdfBlob);
 
   const payload = {
-    to: "l.tureop@gmail.com", 
+    to,
+    // IMPORTANTE: en testing Resend suele fallar si mandas CC a correos no verificados
+    cc: [],
     subject,
     documentLabel,
     fileName,
@@ -320,13 +395,27 @@ async function sendPdfByEmailMobile({ pdfBlob, procedureType }) {
     body: JSON.stringify(payload),
   });
 
+  // Diagnóstico mejorado
   if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`Edge Function error: ${res.status} ${txt}`);
+    const raw = await res.text().catch(() => "");
+    let detail = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      detail = parsed?.error || parsed?.message || raw;
+    } catch (_) {
+      // raw ya trae info útil
+    }
+
+    console.error("Edge Function error detail:", detail);
+    safeToast("Error al enviar correo. Revise destinatario/Resend (testing).");
+    throw new Error(`Edge Function error: ${res.status} ${raw}`);
   }
 
   const json = await res.json().catch(() => ({}));
-  if (!json?.ok) throw new Error("La función de correo respondió sin ok.");
+  if (!json?.ok) {
+    safeToast("La función de correo respondió con error.");
+    throw new Error(json?.error || "La función de correo respondió sin ok.");
+  }
 }
 
 /***************************************************
